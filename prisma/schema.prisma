@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Transaction {
+  id                 String          @id @default(uuid())
+  userId             String          @db.Uuid
+  description        String
+  amount             Decimal         @db.Decimal(10, 2)
+  date               DateTime
+  notes              String?
+  type               TransactionType
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  categoryId         String
+  tag                TransactionTag?
+  paymentMethod      PaymentMethod?
+  installmentGroupId String?         @db.Uuid
+  installmentIndex   Int?
+  installmentCount   Int?
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category           Category        @relation(fields: [categoryId], references: [id])
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([date])
+  @@index([installmentGroupId])
+  @@map("transactions")
+}
+
+model Category {
+  id           String        @id @default(uuid())
+  userId       String        @db.Uuid
+  name         String
+  color        String        @default("#000000")
+  icon         String?
+  isDefault    Boolean       @default(false)
+  type         CategoryType?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  budgets      Budget[]
+  transactions Transaction[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("categories")
+}
+
+model Budget {
+  id          String   @id @default(uuid())
+  userId      String   @db.Uuid
+  amount      Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  categoryId  String
+  budgetMonth String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId, budgetMonth])
+  @@index([userId])
+  @@index([categoryId])
+  @@index([budgetMonth])
+  @@map("budgets")
+}
+
+model User {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         Role          @default(USER)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  categories   Category[]
+  budgets      Budget[]
+
+  @@map("users")
+}
+
+enum TransactionType {
+  GANHO
+  GASTO
+}
+
+enum TransactionTag {
+  FALTA
+  PAGO
+  DEVOLVER
+  ECONOMIA
+}
+
+enum CategoryType {
+  GANHO
+  GASTO
+  AMBOS
+}
+
+enum PaymentMethod {
+  PIX
+  DEBITO
+  CREDITO
+}
+
+enum Role {
+  ADMIN
+  USER
+}
