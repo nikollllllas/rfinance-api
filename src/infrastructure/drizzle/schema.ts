@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   boolean,
   decimal,
@@ -27,19 +28,27 @@ export const paymentMethodEnum = pgEnum('PaymentMethod', [
 ]);
 
 export const users = pgTable('users', {
-  id: uuid('id').primaryKey(),
+  id: uuid('id')
+    .primaryKey()
+    .$defaultFn(() => randomUUID()),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   passwordHash: text('passwordHash').notNull(),
   role: roleEnum('role').notNull().default('USER'),
-  createdAt: timestamp('createdAt', { withTimezone: false }).notNull(),
-  updatedAt: timestamp('updatedAt', { withTimezone: false }).notNull(),
+  createdAt: timestamp('createdAt', { withTimezone: false })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: timestamp('updatedAt', { withTimezone: false })
+    .notNull()
+    .$defaultFn(() => new Date()),
 });
 
 export const categories = pgTable(
   'categories',
   {
-    id: text('id').primaryKey(),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
     userId: uuid('userId')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
@@ -48,8 +57,12 @@ export const categories = pgTable(
     icon: text('icon'),
     isDefault: boolean('isDefault').notNull().default(false),
     type: categoryTypeEnum('type'),
-    createdAt: timestamp('createdAt', { withTimezone: false }).notNull(),
-    updatedAt: timestamp('updatedAt', { withTimezone: false }).notNull(),
+    createdAt: timestamp('createdAt', { withTimezone: false })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: timestamp('updatedAt', { withTimezone: false })
+      .notNull()
+      .$defaultFn(() => new Date()),
   },
   (t) => ({
     userIdx: index('categories_userId_idx').on(t.userId),
@@ -60,7 +73,9 @@ export const categories = pgTable(
 export const transactions = pgTable(
   'transactions',
   {
-    id: text('id').primaryKey(),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
     userId: uuid('userId')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
@@ -69,8 +84,12 @@ export const transactions = pgTable(
     date: timestamp('date', { withTimezone: false }).notNull(),
     notes: text('notes'),
     type: transactionTypeEnum('type').notNull(),
-    createdAt: timestamp('createdAt', { withTimezone: false }).notNull(),
-    updatedAt: timestamp('updatedAt', { withTimezone: false }).notNull(),
+    createdAt: timestamp('createdAt', { withTimezone: false })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: timestamp('updatedAt', { withTimezone: false })
+      .notNull()
+      .$defaultFn(() => new Date()),
     categoryId: text('categoryId')
       .notNull()
       .references(() => categories.id, { onUpdate: 'cascade' }),
@@ -91,13 +110,19 @@ export const transactions = pgTable(
 export const budgets = pgTable(
   'budgets',
   {
-    id: text('id').primaryKey(),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
     userId: uuid('userId')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
-    createdAt: timestamp('createdAt', { withTimezone: false }).notNull(),
-    updatedAt: timestamp('updatedAt', { withTimezone: false }).notNull(),
+    createdAt: timestamp('createdAt', { withTimezone: false })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: timestamp('updatedAt', { withTimezone: false })
+      .notNull()
+      .$defaultFn(() => new Date()),
     categoryId: text('categoryId')
       .notNull()
       .references(() => categories.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
