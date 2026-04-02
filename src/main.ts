@@ -26,7 +26,6 @@ async function bootstrap() {
       callback(null, false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type'],
   });
 
   app.setGlobalPrefix('v1');
