@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, eq, gt, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, gt, ilike, isNull, or } from 'drizzle-orm';
 import { DrizzleService } from '../../infrastructure/drizzle/drizzle.service';
 import { passwordRecoveryTokens, users } from '../../infrastructure/drizzle/schema';
 import { Role } from '../../common/enums/role.enum';
@@ -52,6 +52,32 @@ export class DrizzleUsersRepository extends UsersRepository {
       .where(eq(users.id, id))
       .returning();
     return { ...result[0], role: result[0].role as Role };
+  }
+
+  async list(input: { page: number; perPage: number; search?: string }): Promise<UserRecord[]> {
+    const offset = (input.page - 1) * input.perPage;
+    const term = input.search?.trim();
+    const where = term
+      ? or(ilike(users.name, `%${term}%`), ilike(users.email, `%${term}%`))
+      : undefined;
+
+    const query = this.drizzle.db.select().from(users).orderBy(desc(users.createdAt));
+    const result = where
+      ? await query.where(where).limit(input.perPage).offset(offset)
+      : await query.limit(input.perPage).offset(offset);
+
+    return result.map((user) => ({ ...user, role: user.role as Role }));
+  }
+
+  async count(input: { search?: string }): Promise<number> {
+    const term = input.search?.trim();
+    const where = term
+      ? or(ilike(users.name, `%${term}%`), ilike(users.email, `%${term}%`))
+      : undefined;
+
+    const query = this.drizzle.db.select({ total: count() }).from(users);
+    const result = where ? await query.where(where) : await query;
+    return Number(result[0]?.total ?? 0);
   }
 
   async createPasswordRecoveryToken(

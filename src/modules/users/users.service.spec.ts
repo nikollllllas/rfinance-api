@@ -28,6 +28,8 @@ describe('UsersService', () => {
             findById: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
+            list: jest.fn(),
+            count: jest.fn(),
           },
         },
       ],
@@ -179,5 +181,105 @@ describe('UsersService', () => {
         name: 'Novo Nome',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('deve listar usuários com paginação', async () => {
+    const firstCreatedAt = new Date('2026-01-01T00:00:00.000Z');
+    const firstUpdatedAt = new Date('2026-01-01T00:00:00.000Z');
+    const secondCreatedAt = new Date('2026-01-02T00:00:00.000Z');
+    const secondUpdatedAt = new Date('2026-01-02T00:00:00.000Z');
+
+    (repository.list as jest.Mock).mockResolvedValue([
+      {
+        id: 'admin-id',
+        name: 'Admin',
+        email: 'admin@rfinance.local',
+        role: Role.ADMIN,
+        passwordHash: 'hashed-admin',
+        createdAt: firstCreatedAt,
+        updatedAt: firstUpdatedAt,
+      },
+      {
+        id: 'user-id',
+        name: 'User',
+        email: 'user@rfinance.local',
+        role: Role.USER,
+        passwordHash: 'hashed-user',
+        createdAt: secondCreatedAt,
+        updatedAt: secondUpdatedAt,
+      },
+    ]);
+    (repository.count as jest.Mock).mockResolvedValue(9);
+
+    const result = await service.list({
+      page: 2,
+      perPage: 2,
+    });
+
+    expect(repository.list).toHaveBeenCalledWith({
+      page: 2,
+      perPage: 2,
+      search: undefined,
+    });
+    expect(repository.count).toHaveBeenCalledWith({ search: undefined });
+    expect(result).toEqual({
+      items: [
+        {
+          id: 'admin-id',
+          name: 'Admin',
+          email: 'admin@rfinance.local',
+          role: Role.ADMIN,
+          createdAt: firstCreatedAt,
+          updatedAt: firstUpdatedAt,
+        },
+        {
+          id: 'user-id',
+          name: 'User',
+          email: 'user@rfinance.local',
+          role: Role.USER,
+          createdAt: secondCreatedAt,
+          updatedAt: secondUpdatedAt,
+        },
+      ],
+      page: 2,
+      perPage: 2,
+      total: 9,
+      totalPages: 5,
+    });
+  });
+
+  it('deve normalizar busca e aplicar paginação padrão ao listar usuários', async () => {
+    const createdAt = new Date('2026-01-03T00:00:00.000Z');
+    const updatedAt = new Date('2026-01-03T00:00:00.000Z');
+
+    (repository.list as jest.Mock).mockResolvedValue([
+      {
+        id: 'user-id',
+        name: 'User',
+        email: 'user@rfinance.local',
+        role: Role.USER,
+        passwordHash: 'hashed-user',
+        createdAt,
+        updatedAt,
+      },
+    ]);
+    (repository.count as jest.Mock).mockResolvedValue(1);
+
+    const result = await service.list({
+      search: '  USER@RFINANCE.LOCAL  ',
+    });
+
+    expect(repository.list).toHaveBeenCalledWith({
+      page: 1,
+      perPage: 10,
+      search: 'user@rfinance.local',
+    });
+    expect(repository.count).toHaveBeenCalledWith({
+      search: 'user@rfinance.local',
+    });
+    expect(result.page).toBe(1);
+    expect(result.perPage).toBe(10);
+    expect(result.total).toBe(1);
+    expect(result.totalPages).toBe(1);
   });
 });

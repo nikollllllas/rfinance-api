@@ -13,6 +13,11 @@ const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
 
 (shouldRun ? describe : describe.skip)('Creates (e2e, DB)', () => {
   let app: INestApplication<App>;
+  let drizzle: DrizzleService;
+  const createdCategoryIds = new Set<string>();
+  const createdBudgetIds = new Set<string>();
+  const createdTransactionIds = new Set<string>();
+  const createdUserIds = new Set<string>();
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -32,7 +37,7 @@ const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
 
-    const drizzle = app.get(DrizzleService);
+    drizzle = app.get(DrizzleService);
     await drizzle.db.execute(sql`
       CREATE TABLE IF NOT EXISTS password_recovery_tokens (
         "id" uuid PRIMARY KEY,
@@ -45,11 +50,61 @@ const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
     `);
   });
 
+  afterEach(async () => {
+    const transactionIds = Array.from(createdTransactionIds);
+    if (transactionIds.length > 0) {
+      await drizzle.db.execute(sql`
+        DELETE FROM transactions
+        WHERE id IN (${sql.join(
+          transactionIds.map((id) => sql`${id}`),
+          sql`, `,
+        )})
+      `);
+      createdTransactionIds.clear();
+    }
+
+    const budgetIds = Array.from(createdBudgetIds);
+    if (budgetIds.length > 0) {
+      await drizzle.db.execute(sql`
+        DELETE FROM budgets
+        WHERE id IN (${sql.join(
+          budgetIds.map((id) => sql`${id}`),
+          sql`, `,
+        )})
+      `);
+      createdBudgetIds.clear();
+    }
+
+    const categoryIds = Array.from(createdCategoryIds);
+    if (categoryIds.length > 0) {
+      await drizzle.db.execute(sql`
+        DELETE FROM categories
+        WHERE id IN (${sql.join(
+          categoryIds.map((id) => sql`${id}`),
+          sql`, `,
+        )})
+      `);
+      createdCategoryIds.clear();
+    }
+
+    const userIds = Array.from(createdUserIds);
+    if (userIds.length > 0) {
+      await drizzle.db.execute(sql`
+        DELETE FROM users
+        WHERE id IN (${sql.join(
+          userIds.map((id) => sql`${id}`),
+          sql`, `,
+        )})
+      `);
+      createdUserIds.clear();
+    }
+  });
+
   afterAll(async () => {
     await app.close();
   });
 
-  it('cria categoria, orçamento e transação (inserts persistem)', async () => {
+  it('cria categoria, orçamento e transação (com limpeza pós-teste)', async () => {
     const login = await request(app.getHttpServer())
       .post('/v1/auth/login')
       .send({ email: 'admin@rfinance.local', password: 'Admin@123' })
@@ -74,9 +129,10 @@ const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
     expect(categoryId).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
+    createdCategoryIds.add(categoryId);
 
     const budgetMonth = `2030-${String((suffix % 12) + 1).padStart(2, '0')}`;
-    await request(app.getHttpServer())
+    const budgetRes = await request(app.getHttpServer())
       .post('/v1/budgets')
       .set('Authorization', `Bearer ${token}`)
       .send({
@@ -85,8 +141,11 @@ const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
         categoryId,
       })
       .expect(201);
+    if (budgetRes.body?.id) {
+      createdBudgetIds.add(String(budgetRes.body.id));
+    }
 
-    await request(app.getHttpServer())
+    const transactionRes = await request(app.getHttpServer())
       .post('/v1/transactions')
       .set('Authorization', `Bearer ${token}`)
       .send({
@@ -99,6 +158,9 @@ const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
         tag: 'ECONOMIA',
       })
       .expect(201);
+    if (transactionRes.body?.id) {
+      createdTransactionIds.add(String(transactionRes.body.id));
+    }
   });
 
   it('cria usuário, atualiza perfil e recupera senha com token', async () => {
@@ -127,6 +189,7 @@ const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
 
     const userId = createdUser.body.id as string;
     expect(userId).toBeDefined();
+    createdUserIds.add(userId);
 
     const userLogin = await request(app.getHttpServer())
       .post('/v1/auth/login')
