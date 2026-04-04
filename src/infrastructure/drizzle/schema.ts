@@ -43,6 +43,28 @@ export const users = pgTable('users', {
     .$defaultFn(() => new Date()),
 });
 
+export const passwordRecoveryTokens = pgTable(
+  'password_recovery_tokens',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
+    userId: uuid('userId')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    tokenHash: text('tokenHash').notNull().unique(),
+    expiresAt: timestamp('expiresAt', { withTimezone: false }).notNull(),
+    usedAt: timestamp('usedAt', { withTimezone: false }),
+    createdAt: timestamp('createdAt', { withTimezone: false })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    userIdx: index('password_recovery_tokens_userId_idx').on(t.userId),
+    expiresAtIdx: index('password_recovery_tokens_expiresAt_idx').on(t.expiresAt),
+  }),
+);
+
 export const categories = pgTable(
   'categories',
   {
@@ -144,6 +166,7 @@ export type DbUser = typeof users.$inferSelect;
 export type DbCategory = typeof categories.$inferSelect;
 export type DbTransaction = typeof transactions.$inferSelect;
 export type DbBudget = typeof budgets.$inferSelect;
+export type DbPasswordRecoveryToken = typeof passwordRecoveryTokens.$inferSelect;
 
 export const CategoryType = {
   GANHO: 'GANHO',
