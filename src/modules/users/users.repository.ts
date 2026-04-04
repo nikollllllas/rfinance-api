@@ -22,6 +22,16 @@ export type CreatePasswordRecoveryTokenInput = {
   expiresAt: Date;
 };
 
+export type ListUsersInput = {
+  page: number;
+  perPage: number;
+  search?: string;
+};
+
+export type CountUsersInput = {
+  search?: string;
+};
+
 export type PasswordRecoveryTokenRecord = {
   id: string;
   userId: string;
@@ -46,6 +56,14 @@ export class UsersRepository {
   }
 
   update(_id: string, _data: UpdateUserInput): Promise<UserRecord> {
+    throw new Error('Not implemented');
+  }
+
+  list(_input: ListUsersInput): Promise<UserRecord[]> {
+    throw new Error('Not implemented');
+  }
+
+  count(_input: CountUsersInput): Promise<number> {
     throw new Error('Not implemented');
   }
 

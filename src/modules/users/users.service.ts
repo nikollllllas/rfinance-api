@@ -40,6 +40,20 @@ export type UserPublicView = {
   updatedAt: Date;
 };
 
+export type ListUsersInput = Partial<{
+  page: number;
+  perPage: number;
+  search: string;
+}>;
+
+export type ListUsersOutput = {
+  items: UserPublicView[];
+  page: number;
+  perPage: number;
+  total: number;
+  totalPages: number;
+};
+
 @Injectable()
 export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
@@ -50,6 +64,27 @@ export class UsersService {
 
   findById(id: string): Promise<UserRecord | null> {
     return this.usersRepository.findById(id);
+  }
+
+  async list(input: ListUsersInput): Promise<ListUsersOutput> {
+    const page = this.normalizePositiveInteger(input.page, 1);
+    const perPage = this.normalizePositiveInteger(input.perPage, 10);
+    const search = input.search?.trim()
+      ? this.normalizeEmail(input.search)
+      : undefined;
+
+    const [users, total] = await Promise.all([
+      this.usersRepository.list({ page, perPage, search }),
+      this.usersRepository.count({ search }),
+    ]);
+
+    return {
+      items: users.map((user) => this.toPublicView(user)),
+      page,
+      perPage,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / perPage)),
+    };
   }
 
   async create(input: CreateUserInput): Promise<UserPublicView> {
@@ -149,6 +184,13 @@ export class UsersService {
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+  }
+
+  private normalizePositiveInteger(value: number | undefined, fallback: number): number {
+    if (!value || Number.isNaN(value) || value < 1) {
+      return fallback;
+    }
+    return Math.floor(value);
   }
 
   private async findByIdOrThrow(id: string): Promise<UserRecord> {

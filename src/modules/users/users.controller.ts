@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -13,6 +13,7 @@ import { Permission } from '../../common/enums/permission.enum';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { AdminResetPasswordDto } from './dto/admin-reset-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
 import { UpdateUserByAdminDto } from './dto/update-user-by-admin.dto';
 import { UsersService } from './users.service';
@@ -22,6 +23,15 @@ import { UsersService } from './users.service';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get()
+  @Permissions(Permission.USERS_MANAGE)
+  @ApiOkResponse({ description: 'Usuários listados com sucesso' })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  @ApiResponse({ status: 403, description: 'Sem permissão para executar esta ação' })
+  list(@Query() query: ListUsersQueryDto) {
+    return this.usersService.list(query);
+  }
 
   @Post()
   @Permissions(Permission.USERS_MANAGE)
