@@ -11,9 +11,11 @@
    Do instead: ensure `.env` (or shell env) includes `DATABASE_URL` before running `pnpm start:dev`.
 
 ## Shell & Command Reliability
-1. **[2026-03-31] Keep local database bootstrapping reproducible**
+1. **[2026-04-04] `pg_dump "$DATABASE_URL"` silently falls back to local socket when URL is empty**
+   Do instead: verify URL first with `echo "$DATABASE_URL"` (or `printenv DATABASE_URL`) and fail fast if empty before backup commands.
+2. **[2026-03-31] Keep local database bootstrapping reproducible**
    Do instead: use a committed `docker-compose.yml` and a single documented startup command.
-2. **[2026-03-31] pnpm lockfile may keep optional peer metadata**
+3. **[2026-03-31] pnpm lockfile may keep optional peer metadata**
    Do instead: validate runtime usage with `pnpm list <pkg>` and code search, not lockfile strings only.
 
 ## Domain Behavior Guardrails

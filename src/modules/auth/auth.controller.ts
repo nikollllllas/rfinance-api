@@ -11,7 +11,9 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { AuthService } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -42,6 +44,41 @@ export class AuthController {
     user: { id: string; name: string; email: string; role: string };
   }> {
     return this.authService.login(dto);
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(200)
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiOkResponse({
+    description: 'Solicitação de recuperação recebida',
+    schema: {
+      example: {
+        message:
+          'Se existir uma conta com este e-mail, enviaremos as instruções de recuperação.',
+      },
+    },
+  })
+  forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+  ): Promise<{ message: string; resetToken?: string }> {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(200)
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiOkResponse({
+    schema: {
+      example: {
+        success: true,
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Token de recuperação inválido ou expirado' })
+  resetPassword(@Body() dto: ResetPasswordDto): Promise<{ success: boolean }> {
+    return this.authService.resetPassword(dto);
   }
 
   @Post('logout')
