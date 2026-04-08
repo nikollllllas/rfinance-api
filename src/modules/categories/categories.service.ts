@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Role } from '../../common/enums/role.enum';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { DbCategory } from '../../infrastructure/drizzle/schema';
 import { CategoriesRepository } from './categories.repository';
@@ -28,7 +27,6 @@ export class CategoriesService {
   }
 
   async create(user: AuthenticatedUser, dto: CreateCategoryDto): Promise<DbCategory> {
-    this.ensureAdmin(user);
     const existing = await this.categoriesRepository.findByNameAndUserId(
       dto.name,
       user.userId,
@@ -52,7 +50,6 @@ export class CategoriesService {
     user: AuthenticatedUser,
     dto: UpdateCategoryDto,
   ): Promise<DbCategory> {
-    this.ensureAdmin(user);
     const existing = await this.getById(id, user.userId);
 
     const payload: UpdateCategoryDto = { ...dto };
@@ -76,7 +73,6 @@ export class CategoriesService {
   }
 
   async remove(id: string, user: AuthenticatedUser): Promise<{ message: string }> {
-    this.ensureAdmin(user);
     const existing = await this.getById(id, user.userId);
 
     if (existing.isDefault) {
@@ -105,11 +101,5 @@ export class CategoriesService {
 
     await this.categoriesRepository.delete(id);
     return { message: 'Categoria excluída com sucesso' };
-  }
-
-  private ensureAdmin(user: AuthenticatedUser): void {
-    if (user.role !== Role.ADMIN) {
-      throw new ForbiddenException('Sem permissão para executar esta ação');
-    }
   }
 }
