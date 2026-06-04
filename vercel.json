@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "pnpm build",
   "builds": [
     {
       "src": "dist/src/index.js",
