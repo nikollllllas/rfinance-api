@@ -47,6 +47,9 @@ importers:
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(pg@8.20.0)
+      express:
+        specifier: ^5.2.1
+        version: 5.2.1
       passport:
         specifier: ^0.7.0
         version: 0.7.0
