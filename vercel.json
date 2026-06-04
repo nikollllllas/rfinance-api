@@ -2,14 +2,14 @@
   "version": 2,
   "buildCommand": "pnpm build",
   "functions": {
-    "dist/src/index.js": {
+    "api/index.js": {
       "includeFiles": "dist/**"
     }
   },
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "dist/src/index.js"
+      "dest": "api/index.js"
     }
   ]
 }
