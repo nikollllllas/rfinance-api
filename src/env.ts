@@ -1,8 +1,7 @@
 import 'dotenv/config';
-import { createEnv } from '@t3-oss/env-core';
 import { z } from 'zod';
 
-const server = {
+const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),
@@ -49,15 +48,14 @@ const server = {
           'CORS_ALLOWED_ORIGINS must be a comma-separated list of valid URLs',
       },
     ),
-};
+});
 
-export const createValidatedEnv = (
-  runtimeEnv: Record<string, string | undefined>,
-) =>
-  createEnv({
-    server,
-    runtimeEnv,
-    emptyStringAsUndefined: true,
-  });
+export type Env = z.infer<typeof envSchema>;
 
-export const env = createValidatedEnv(process.env);
+const parsed = envSchema.safeParse(process.env);
+if (!parsed.success) {
+  console.error('Invalid environment variables:', parsed.error.flatten().fieldErrors);
+  process.exit(1);
+}
+
+export const env: Env = parsed.data;
