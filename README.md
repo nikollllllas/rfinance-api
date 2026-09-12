@@ -1,45 +1,29 @@
 # RFinance API
 
-API backend do RFinance construída com NestJS.
+API backend do **RFinance**, construída com NestJS. Fornece autenticação, controle de acesso por papéis (RBAC) e os recursos de gestão financeira (transações, categorias e orçamentos) consumidos pelo [RFinance Web](https://github.com/nikollllllas/rfinance-web).
 
 ## Stack
 
 - NestJS 11
-- Drizzle ORM
-- JWT (Bearer) + RBAC
-- Swagger em `/docs`
+- Drizzle ORM (PostgreSQL)
+- Autenticação JWT (Bearer) + RBAC
+- Documentação via Swagger em `/docs`
+
+## Módulos implementados
+
+- `auth`
+- `users`
+- `rbac`
+- `categories`
+- `transactions`
+- `budgets`
+- `dashboard`
 
 ## Requisitos
 
 - Node.js 20+
 - pnpm 10+
 - Docker (para Postgres local)
-
-## Banco local com Docker
-
-Suba o Postgres local:
-
-```bash
-pnpm db:up
-```
-
-Pare e remova containers/rede:
-
-```bash
-pnpm db:down
-```
-
-Ver logs do banco:
-
-```bash
-pnpm db:logs
-```
-
-`DATABASE_URL` local padrão:
-
-```bash
-postgresql://postgres:postgres@localhost:5432/rfinance
-```
 
 ## Configuração
 
@@ -56,7 +40,7 @@ cp .env.example .env
 - `DATABASE_URL`
 - `CORS_ALLOWED_ORIGINS`
 
-3. Instale dependências:
+3. Instale as dependências:
 
 ```bash
 pnpm install
@@ -68,20 +52,32 @@ pnpm install
 pnpm db:up
 ```
 
+`DATABASE_URL` local padrão:
+
+```
+postgresql://postgres:postgres@localhost:5432/rfinance
+```
+
+Outros comandos úteis do banco:
+
+```bash
+pnpm db:down    # para e remove containers/rede
+pnpm db:logs    # logs do banco
+```
+
 ## Execução
 
 ```bash
 pnpm dev
 ```
 
-Ou para subir banco + API com um comando:
+Ou para subir banco + API com um único comando:
 
 ```bash
 pnpm dev:up
 ```
 
-API:
-- Base URL: `http://localhost:3000/v1`
+- API: `http://localhost:3000/v1`
 - Swagger: `http://localhost:3000/docs`
 
 ## Build e testes
@@ -91,30 +87,10 @@ pnpm build
 pnpm test
 ```
 
-Validação:
-
-```bash
-pnpm test
-```
-
-## Módulos implementados
-
-- `auth`
-- `users`
-- `rbac`
-- `categories`
-- `transactions`
-- `budgets`
-- `dashboard`
-
 ## Observações de migração
 
-As diferenças relevantes de contrato e compatibilidade estão em:
-
-- `docs/migration-notes.md`
+Diferenças relevantes de contrato e compatibilidade estão documentadas em `docs/migration-notes.md`.
 
 ## Deploy no Render
 
-Guia de deploy e checklist de validação:
-
-- `docs/render-deploy.md`
+Guia de deploy e checklist de validação em `docs/render-deploy.md`.
