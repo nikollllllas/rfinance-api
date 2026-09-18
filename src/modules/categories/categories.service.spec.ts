@@ -1,7 +1,4 @@
-import {
-  ConflictException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Role } from '../../common/enums/role.enum';
 import { CategoriesRepository } from './categories.repository';
@@ -62,12 +59,18 @@ describe('CategoriesService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('deve negar criação para role sem permissão', async () => {
+  it('deve permitir criação para usuário comum', async () => {
+    (repository.findByNameAndUserId as jest.Mock).mockResolvedValue(null);
+    (repository.create as jest.Mock).mockResolvedValue({ id: 'category-id' });
+
     await expect(
       service.create(regularUser, {
         name: 'Alimentação',
         color: '#22C55E',
       }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    ).resolves.toEqual({ id: 'category-id' });
+    expect(repository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: regularUser.userId }),
+    );
   });
 });
