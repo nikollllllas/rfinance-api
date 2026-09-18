@@ -8,6 +8,16 @@ if (!databaseUrl) {
   throw new Error('DATABASE_URL is required to run seed');
 }
 
+const { hostname } = new URL(databaseUrl);
+if (
+  !['localhost', '127.0.0.1', 'postgres'].includes(hostname) &&
+  process.env.ALLOW_REMOTE_SEED !== 'true'
+) {
+  throw new Error(
+    `Refusing to seed non-local database host "${hostname}": seed overwrites user passwords with fixed values. Set ALLOW_REMOTE_SEED=true to override.`,
+  );
+}
+
 const pool = new Pool({ connectionString: databaseUrl });
 
 const now = new Date();
