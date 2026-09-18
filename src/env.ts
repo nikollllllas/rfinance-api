@@ -23,13 +23,7 @@ const envSchema = z.object({
     .default('https://www.rfinanece-vercel.app'),
   CORS_ALLOWED_ORIGINS: z
     .string()
-    .default(
-      [
-        'https://www.rfinanece-vercel.app',
-        'https://rfinanece-web-git-main-nikollas-projects-9321ac0f.vercel.app',
-        'https://rfinanece-g2pe0tq1p-nikollas-projects-9321ac0f.vercel.app',
-      ].join(','),
-    )
+    .default('https://www.rfinanece-vercel.app')
     .transform((value) =>
       value
         .split(',')

@@ -126,6 +126,8 @@ export const transactions = pgTable(
     userIdx: index('transactions_userId_idx').on(t.userId),
     categoryIdx: index('transactions_categoryId_idx').on(t.categoryId),
     dateIdx: index('transactions_date_idx').on(t.date),
+    userCreatedAtIdx: index('transactions_userId_createdAt_idx').on(t.userId, t.createdAt),
+    userDateIdx: index('transactions_userId_date_idx').on(t.userId, t.date),
     groupIdx: index('transactions_installmentGroupId_idx').on(t.installmentGroupId),
   }),
 );
