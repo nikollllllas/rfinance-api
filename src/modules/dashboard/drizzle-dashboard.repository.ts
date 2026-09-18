@@ -41,6 +41,25 @@ export class DrizzleDashboardRepository extends DashboardRepository {
       );
   }
 
+  monthlyTotals(userId: string, start: Date, end: Date) {
+    const month = sql<string>`to_char(date_trunc('month', ${transactions.date}), 'YYYY-MM')`;
+    return this.drizzle.db
+      .select({
+        month,
+        type: transactions.type,
+        total: sql<string | null>`sum(${transactions.amount})`,
+      })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          gte(transactions.date, start),
+          lte(transactions.date, end),
+        ),
+      )
+      .groupBy(month, transactions.type);
+  }
+
   findRecentTransactions(userId: string) {
     return this.drizzle.db
       .select({ transaction: transactions, category: categories })
