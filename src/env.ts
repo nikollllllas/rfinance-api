@@ -15,6 +15,12 @@ const envSchema = z.object({
         url.startsWith('postgres://') || url.startsWith('postgresql://'),
       'DATABASE_URL must use postgres:// or postgresql://',
     ),
+  RESEND_API_KEY: z.string().optional(),
+  MAIL_FROM: z.string().default('RFinance <onboarding@resend.dev>'),
+  FRONTEND_URL: z
+    .string()
+    .url()
+    .default('https://www.rfinanece-vercel.app'),
   CORS_ALLOWED_ORIGINS: z
     .string()
     .default(

@@ -1,15 +1,16 @@
 {
   "version": 2,
-  "buildCommand": "pnpm build",
-  "functions": {
-    "api/index.js": {
-      "includeFiles": "dist/**"
+  "builds": [
+    {
+      "src": "src/main.ts",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/index.js"
+      "dest": "src/main.ts",
+      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
     }
   ]
 }

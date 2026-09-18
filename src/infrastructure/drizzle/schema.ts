@@ -20,6 +20,7 @@ export const transactionTagEnum = pgEnum('TransactionTag', [
   'PAGO',
   'DEVOLVER',
   'ECONOMIA',
+  'RECEBIDO',
 ]);
 export const paymentMethodEnum = pgEnum('PaymentMethod', [
   'PIX',
@@ -186,6 +187,7 @@ export const TransactionTag = {
   PAGO: 'PAGO',
   DEVOLVER: 'DEVOLVER',
   ECONOMIA: 'ECONOMIA',
+  RECEBIDO: 'RECEBIDO',
 } as const;
 export type TransactionTag = (typeof TransactionTag)[keyof typeof TransactionTag];
 
