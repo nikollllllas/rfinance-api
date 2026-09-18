@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -21,6 +22,8 @@ const PASSWORD_RECOVERY_TOKEN_TTL_MINUTES = 30;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
@@ -114,9 +117,15 @@ export class AuthService {
     });
 
     const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${token}`;
-    await this.mailService.sendPasswordRecoveryEmail(user.email, resetUrl);
+    // Not awaited: response time must not reveal whether the email exists.
+    this.mailService
+      .sendPasswordRecoveryEmail(user.email, resetUrl)
+      .catch((err: unknown) =>
+        this.logger.error('Failed to send password recovery email', err),
+      );
 
-    if (process.env.NODE_ENV !== 'production') {
+    // Read process.env directly (no zod default): token only leaks when NODE_ENV is explicitly dev/test.
+    if (['development', 'test'].includes(process.env.NODE_ENV ?? '')) {
       return { ...genericResponse, resetToken: token };
     }
 
