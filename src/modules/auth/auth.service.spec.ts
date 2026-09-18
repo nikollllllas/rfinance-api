@@ -145,14 +145,37 @@ describe('AuthService', () => {
       undefined,
     );
     (usersService.createPasswordRecoveryToken as jest.Mock).mockResolvedValue(undefined);
+    (mailService.sendPasswordRecoveryEmail as jest.Mock).mockResolvedValue(undefined);
 
-    await service.forgotPassword({ email: 'user@rfinance.local' });
+    const result = await service.forgotPassword({ email: 'user@rfinance.local' });
+    expect(result.resetToken).toBeDefined();
 
     expect(usersService.createPasswordRecoveryToken).toHaveBeenCalled();
     expect(mailService.sendPasswordRecoveryEmail).toHaveBeenCalledWith(
       'user@rfinance.local',
       expect.stringContaining('/reset-password?token='),
     );
+  });
+
+  it('não deve retornar resetToken quando NODE_ENV não é development/test', async () => {
+    (usersService.findByEmail as jest.Mock).mockResolvedValue({
+      id: 'user-id',
+      email: 'user@rfinance.local',
+    });
+    (mailService.sendPasswordRecoveryEmail as jest.Mock).mockRejectedValue(
+      new Error('smtp down'),
+    );
+    const prev = process.env.NODE_ENV;
+    try {
+      for (const value of [undefined, 'production']) {
+        if (value === undefined) delete process.env.NODE_ENV;
+        else process.env.NODE_ENV = value;
+        const result = await service.forgotPassword({ email: 'user@rfinance.local' });
+        expect(result.resetToken).toBeUndefined();
+      }
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
   });
 
   it('deve rejeitar reset com token inválido', async () => {
