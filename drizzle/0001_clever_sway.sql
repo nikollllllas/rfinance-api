@@ -1,0 +1,1 @@
+ALTER TYPE "public"."TransactionTag" ADD VALUE 'RECEBIDO';
