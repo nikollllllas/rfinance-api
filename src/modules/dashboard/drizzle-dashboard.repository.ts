@@ -47,7 +47,7 @@ export class DrizzleDashboardRepository extends DashboardRepository {
       .from(transactions)
       .innerJoin(categories, eq(transactions.categoryId, categories.id))
       .where(eq(transactions.userId, userId))
-      .orderBy(desc(transactions.date))
+      .orderBy(desc(transactions.createdAt))
       .limit(5);
   }
 
