@@ -1,4 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { budgets, categories, transactions } from '../../infrastructure/drizzle/schema';
+
+export type Category = typeof categories.$inferSelect;
+export type TransactionWithCategory = typeof transactions.$inferSelect & { category: Category };
+export type BudgetWithCategory = typeof budgets.$inferSelect & { category: Category };
 
 @Injectable()
 export class DashboardRepository {
@@ -18,11 +23,11 @@ export class DashboardRepository {
     throw new Error('Not implemented');
   }
 
-  findRecentTransactions(_userId: string): Promise<any[]> {
+  findRecentTransactions(_userId: string): Promise<TransactionWithCategory[]> {
     throw new Error('Not implemented');
   }
 
-  findBudgetsWithCategory(_userId: string, _budgetMonth: string): Promise<any[]> {
+  findBudgetsWithCategory(_userId: string, _budgetMonth: string): Promise<BudgetWithCategory[]> {
     throw new Error('Not implemented');
   }
 

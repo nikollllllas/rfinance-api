@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../infrastructure/drizzle/drizzle.service';
 import { budgets, categories, transactions } from '../../infrastructure/drizzle/schema';
-import { DashboardRepository } from './dashboard.repository';
+import {
+  BudgetWithCategory,
+  DashboardRepository,
+  TransactionWithCategory,
+} from './dashboard.repository';
 
 @Injectable()
 export class DrizzleDashboardRepository extends DashboardRepository {
@@ -49,22 +53,27 @@ export class DrizzleDashboardRepository extends DashboardRepository {
       .groupBy(month, transactions.type);
   }
 
-  findRecentTransactions(userId: string) {
-    return this.drizzle.db
+  async findRecentTransactions(userId: string): Promise<TransactionWithCategory[]> {
+    const rows = await this.drizzle.db
       .select({ transaction: transactions, category: categories })
       .from(transactions)
       .innerJoin(categories, eq(transactions.categoryId, categories.id))
       .where(eq(transactions.userId, userId))
       .orderBy(desc(transactions.createdAt))
       .limit(5);
+    return rows.map(({ transaction, category }) => ({ ...transaction, category }));
   }
 
-  findBudgetsWithCategory(userId: string, budgetMonth: string) {
-    return this.drizzle.db
+  async findBudgetsWithCategory(
+    userId: string,
+    budgetMonth: string,
+  ): Promise<BudgetWithCategory[]> {
+    const rows = await this.drizzle.db
       .select({ budget: budgets, category: categories })
       .from(budgets)
       .innerJoin(categories, eq(budgets.categoryId, categories.id))
       .where(and(eq(budgets.userId, userId), eq(budgets.budgetMonth, budgetMonth)));
+    return rows.map(({ budget, category }) => ({ ...budget, category }));
   }
 
   categoryExpenseTotals(userId: string, start: Date, end: Date) {
