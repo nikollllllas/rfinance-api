@@ -11,6 +11,14 @@ export class DashboardRepository {
     throw new Error('Not implemented');
   }
 
+  monthlyTotals(
+    _userId: string,
+    _start: Date,
+    _end: Date,
+  ): Promise<Array<{ month: string; type: string; total: string | null }>> {
+    throw new Error('Not implemented');
+  }
+
   findRecentTransactions(_userId: string): Promise<any[]> {
     throw new Error('Not implemented');
   }

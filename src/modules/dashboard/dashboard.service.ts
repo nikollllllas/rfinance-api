@@ -108,30 +108,22 @@ export class DashboardService {
       }),
     );
 
-    const monthlyData: Array<{
-      month: string;
-      income: number;
-      expenses: number;
-      savings: number;
-    }> = [];
-    for (let i = 5; i >= 0; i -= 1) {
-      const monthDate = subMonths(targetDate, i);
-      const monthStart = startOfMonth(monthDate);
-      const monthEnd = endOfMonth(monthDate);
-      const monthTransactions = await this.dashboardRepository.findTransactionsByRange(
-        userId,
-        monthStart,
-        monthEnd,
-      );
-      const monthIncome = sumByType(monthTransactions, 'GANHO');
-      const monthExpenses = sumByType(monthTransactions, 'GASTO');
-      monthlyData.push({
-        month: format(monthDate, 'MMM'),
-        income: monthIncome,
-        expenses: monthExpenses,
-        savings: monthIncome - monthExpenses,
-      });
-    }
+    const totals = await this.dashboardRepository.monthlyTotals(
+      userId,
+      startOfMonth(subMonths(targetDate, 5)),
+      currentMonthEnd,
+    );
+    const monthlyData = Array.from({ length: 6 }, (_, idx) => {
+      const monthDate = subMonths(targetDate, 5 - idx);
+      const key = format(monthDate, 'yyyy-MM');
+      const sum = (type: string) =>
+        totals
+          .filter((row) => row.month === key && row.type === type)
+          .reduce((acc, row) => acc + Number(row.total ?? 0), 0);
+      const income = sum('GANHO');
+      const expenses = sum('GASTO');
+      return { month: format(monthDate, 'MMM'), income, expenses, savings: income - expenses };
+    });
 
     return {
       summary: {
