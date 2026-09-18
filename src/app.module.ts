@@ -16,7 +16,11 @@ import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 100 }],
+      // e2e suite logs in repeatedly; jest sets NODE_ENV=test
+      skipIf: () => process.env.NODE_ENV === 'test',
+    }),
     DrizzleModule,
     RbacModule,
     UsersModule,
