@@ -2,12 +2,11 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class DashboardRepository {
-  findTransactionsByRange(
+  expensesByCategory(
     _userId: string,
     _start: Date,
     _end: Date,
-    _includeCategory = false,
-  ): Promise<any[]> {
+  ): Promise<Array<{ name: string; color: string; total: string | null }>> {
     throw new Error('Not implemented');
   }
 
