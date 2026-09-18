@@ -10,35 +10,24 @@ export class DrizzleDashboardRepository extends DashboardRepository {
     super();
   }
 
-  findTransactionsByRange(
-    userId: string,
-    start: Date,
-    end: Date,
-    includeCategory = false,
-  ) {
-    if (!includeCategory) {
-      return this.drizzle.db
-        .select()
-        .from(transactions)
-        .where(
-          and(
-            eq(transactions.userId, userId),
-            gte(transactions.date, start),
-            lte(transactions.date, end),
-          ),
-        );
-    }
+  expensesByCategory(userId: string, start: Date, end: Date) {
     return this.drizzle.db
-      .select({ transaction: transactions, category: categories })
+      .select({
+        name: categories.name,
+        color: sql<string>`max(${categories.color})`,
+        total: sql<string | null>`sum(${transactions.amount})`,
+      })
       .from(transactions)
       .innerJoin(categories, eq(transactions.categoryId, categories.id))
       .where(
         and(
           eq(transactions.userId, userId),
+          eq(transactions.type, 'GASTO'),
           gte(transactions.date, start),
           lte(transactions.date, end),
         ),
-      );
+      )
+      .groupBy(categories.name);
   }
 
   monthlyTotals(userId: string, start: Date, end: Date) {
