@@ -158,8 +158,8 @@ const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
         tag: 'ECONOMIA',
       })
       .expect(201);
-    if (transactionRes.body?.id) {
-      createdTransactionIds.add(String(transactionRes.body.id));
+    for (const tx of transactionRes.body?.transactions ?? []) {
+      createdTransactionIds.add(String(tx.id));
     }
   });
 
