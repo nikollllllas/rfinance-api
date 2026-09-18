@@ -27,12 +27,11 @@ export class DashboardRepository {
     throw new Error('Not implemented');
   }
 
-  aggregateCategoryExpenses(
-    userId: string,
-    categoryId: string,
-    start: Date,
-    end: Date,
-  ): Promise<{ _sum: { amount: string | null } }> {
+  categoryExpenseTotals(
+    _userId: string,
+    _start: Date,
+    _end: Date,
+  ): Promise<Array<{ categoryId: string; total: string | null }>> {
     throw new Error('Not implemented');
   }
 }
