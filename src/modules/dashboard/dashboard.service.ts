@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { endOfMonth, format, parse, startOfMonth, subMonths } from 'date-fns';
 import { DashboardRepository } from './dashboard.repository';
 
+// 0 when both are 0; 100 when there is no baseline but current is positive.
+const percentChange = (current: number, previous: number) => {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return ((current - previous) / Math.abs(previous)) * 100;
+};
+
 @Injectable()
 export class DashboardService {
   constructor(private readonly dashboardRepository: DashboardRepository) {}
@@ -37,14 +43,9 @@ export class DashboardService {
 
     const currentSavings = currentIncome - currentExpenses;
     const previousSavings = previousIncome - previousExpenses;
-    const incomeChange =
-      previousIncome === 0 ? 100 : ((currentIncome - previousIncome) / previousIncome) * 100;
-    const expensesChange =
-      previousExpenses === 0 ? 0 : ((currentExpenses - previousExpenses) / previousExpenses) * 100;
-    const savingsChange =
-      previousSavings === 0
-        ? 100
-        : ((currentSavings - previousSavings) / Math.abs(previousSavings)) * 100;
+    const incomeChange = percentChange(currentIncome, previousIncome);
+    const expensesChange = percentChange(currentExpenses, previousExpenses);
+    const savingsChange = percentChange(currentSavings, previousSavings);
 
     const expensesByCategory = categoryRows.map((row) => ({
       name: row.name,
