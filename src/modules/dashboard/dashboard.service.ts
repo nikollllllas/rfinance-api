@@ -53,18 +53,10 @@ export class DashboardService {
       color: row.color,
     }));
 
-    const recentTransactionsRaw =
-      await this.dashboardRepository.findRecentTransactions(userId);
-    const recentTransactions = recentTransactionsRaw.map((tx: any) =>
-      tx.transaction ? { ...tx.transaction, category: tx.category } : tx,
-    );
-    const currentMonthString = format(targetDate, 'yyyy-MM');
-    const budgetsRaw = await this.dashboardRepository.findBudgetsWithCategory(
+    const recentTransactions = await this.dashboardRepository.findRecentTransactions(userId);
+    const budgets = await this.dashboardRepository.findBudgetsWithCategory(
       userId,
-      currentMonthString,
-    );
-    const budgets = budgetsRaw.map((budget: any) =>
-      budget.budget ? { ...budget.budget, category: budget.category } : budget,
+      format(targetDate, 'yyyy-MM'),
     );
     const spentByCategory = new Map(
       (
