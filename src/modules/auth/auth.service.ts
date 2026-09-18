@@ -6,8 +6,10 @@ import {
 import { createHash, randomBytes } from 'node:crypto';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { env } from '../../env';
 import { Role } from '../../common/enums/role.enum';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
+import { MailService } from '../mail/mail.service';
 import { RbacService } from '../rbac/rbac.service';
 import { UsersService } from '../users/users.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -23,6 +25,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly rbacService: RbacService,
+    private readonly mailService: MailService,
   ) {}
 
   async login(dto: LoginDto): Promise<{
@@ -109,6 +112,9 @@ export class AuthService {
       tokenHash,
       expiresAt,
     });
+
+    const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${token}`;
+    await this.mailService.sendPasswordRecoveryEmail(user.email, resetUrl);
 
     if (process.env.NODE_ENV !== 'production') {
       return { ...genericResponse, resetToken: token };

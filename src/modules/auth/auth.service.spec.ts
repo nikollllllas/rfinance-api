@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Role } from '../../common/enums/role.enum';
+import { MailService } from '../mail/mail.service';
 import { RbacService } from '../rbac/rbac.service';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
@@ -16,6 +17,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let usersService: UsersService;
   let jwtService: JwtService;
+  let mailService: MailService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -40,12 +42,19 @@ describe('AuthService', () => {
             signAsync: jest.fn(),
           },
         },
+        {
+          provide: MailService,
+          useValue: {
+            sendPasswordRecoveryEmail: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     usersService = module.get<UsersService>(UsersService);
     jwtService = module.get<JwtService>(JwtService);
+    mailService = module.get<MailService>(MailService);
   });
 
   it('deve autenticar com credenciais válidas', async () => {
@@ -140,6 +149,10 @@ describe('AuthService', () => {
     await service.forgotPassword({ email: 'user@rfinance.local' });
 
     expect(usersService.createPasswordRecoveryToken).toHaveBeenCalled();
+    expect(mailService.sendPasswordRecoveryEmail).toHaveBeenCalledWith(
+      'user@rfinance.local',
+      expect.stringContaining('/reset-password?token='),
+    );
   });
 
   it('deve rejeitar reset com token inválido', async () => {
