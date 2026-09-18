@@ -1,30 +1,41 @@
 import { Injectable } from '@nestjs/common';
+import { budgets, categories, transactions } from '../../infrastructure/drizzle/schema';
+
+export type Category = typeof categories.$inferSelect;
+export type TransactionWithCategory = typeof transactions.$inferSelect & { category: Category };
+export type BudgetWithCategory = typeof budgets.$inferSelect & { category: Category };
 
 @Injectable()
 export class DashboardRepository {
-  findTransactionsByRange(
+  expensesByCategory(
     _userId: string,
     _start: Date,
     _end: Date,
-    _includeCategory = false,
-  ): Promise<any[]> {
+  ): Promise<Array<{ name: string; color: string; total: string | null }>> {
     throw new Error('Not implemented');
   }
 
-  findRecentTransactions(_userId: string): Promise<any[]> {
+  monthlyTotals(
+    _userId: string,
+    _start: Date,
+    _end: Date,
+  ): Promise<Array<{ month: string; type: string; total: string | null }>> {
     throw new Error('Not implemented');
   }
 
-  findBudgetsWithCategory(_userId: string, _budgetMonth: string): Promise<any[]> {
+  findRecentTransactions(_userId: string): Promise<TransactionWithCategory[]> {
     throw new Error('Not implemented');
   }
 
-  aggregateCategoryExpenses(
-    userId: string,
-    categoryId: string,
-    start: Date,
-    end: Date,
-  ): Promise<{ _sum: { amount: string | null } }> {
+  findBudgetsWithCategory(_userId: string, _budgetMonth: string): Promise<BudgetWithCategory[]> {
+    throw new Error('Not implemented');
+  }
+
+  categoryExpenseTotals(
+    _userId: string,
+    _start: Date,
+    _end: Date,
+  ): Promise<Array<{ categoryId: string; total: string | null }>> {
     throw new Error('Not implemented');
   }
 }
