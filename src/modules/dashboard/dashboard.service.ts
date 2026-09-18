@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
+import { endOfMonth, format, parse, startOfMonth, subMonths } from 'date-fns';
 import { DashboardRepository } from './dashboard.repository';
 
 @Injectable()
@@ -8,7 +8,7 @@ export class DashboardService {
 
   async getSummary(userId: string, month?: string) {
     const targetDate = month
-      ? new Date(Number(month.split('-')[0]), Number(month.split('-')[1]) - 1, 1)
+      ? parse(month, 'yyyy-MM', new Date())
       : new Date();
     const currentMonthStart = startOfMonth(targetDate);
     const currentMonthEnd = endOfMonth(targetDate);
