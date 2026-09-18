@@ -89,24 +89,22 @@ export class DashboardService {
     const budgets = budgetsRaw.map((budget: any) =>
       budget.budget ? { ...budget.budget, category: budget.category } : budget,
     );
-    const budgetsWithProgress = await Promise.all(
-      budgets.map(async (budget) => {
-        const aggregate = await this.dashboardRepository.aggregateCategoryExpenses(
+    const spentByCategory = new Map(
+      (
+        await this.dashboardRepository.categoryExpenseTotals(
           userId,
-          budget.categoryId,
           currentMonthStart,
           currentMonthEnd,
-        );
-        const current = Number(aggregate._sum.amount ?? 0);
-        return {
-          id: budget.id,
-          category: budget.category.name,
-          current,
-          max: Number(budget.amount),
-          color: budget.category.color,
-        };
-      }),
+        )
+      ).map((row) => [row.categoryId, Number(row.total ?? 0)]),
     );
+    const budgetsWithProgress = budgets.map((budget) => ({
+      id: budget.id,
+      category: budget.category.name,
+      current: spentByCategory.get(budget.categoryId) ?? 0,
+      max: Number(budget.amount),
+      color: budget.category.color,
+    }));
 
     const totals = await this.dashboardRepository.monthlyTotals(
       userId,

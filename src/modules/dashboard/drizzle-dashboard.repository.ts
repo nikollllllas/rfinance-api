@@ -78,26 +78,21 @@ export class DrizzleDashboardRepository extends DashboardRepository {
       .where(and(eq(budgets.userId, userId), eq(budgets.budgetMonth, budgetMonth)));
   }
 
-  async aggregateCategoryExpenses(
-    userId: string,
-    categoryId: string,
-    start: Date,
-    end: Date,
-  ) {
-    const rows = await this.drizzle.db
+  categoryExpenseTotals(userId: string, start: Date, end: Date) {
+    return this.drizzle.db
       .select({
-        amount: sql<string | null>`sum(${transactions.amount})`,
+        categoryId: transactions.categoryId,
+        total: sql<string | null>`sum(${transactions.amount})`,
       })
       .from(transactions)
       .where(
         and(
           eq(transactions.userId, userId),
-          eq(transactions.categoryId, categoryId),
           eq(transactions.type, 'GASTO'),
           gte(transactions.date, start),
           lte(transactions.date, end),
         ),
-      );
-    return { _sum: { amount: rows[0]?.amount ?? null } };
+      )
+      .groupBy(transactions.categoryId);
   }
 }
