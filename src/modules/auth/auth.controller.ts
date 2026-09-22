@@ -10,8 +10,10 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { SuccessResponseDto } from '../../common/dto/success-response.dto';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { AuthService } from './auth.service';
+import { ForgotPasswordResponseDto, LoginResponseDto, MeResponseDto } from './dto/auth-response.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -26,25 +28,9 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   @ApiBody({ type: LoginDto })
-  @ApiOkResponse({
-    description: 'Login realizado com sucesso',
-    schema: {
-      example: {
-        accessToken: 'jwt.token.value',
-        user: {
-          id: 'uuid',
-          name: 'Administrador',
-          email: 'admin@rfinance.local',
-          role: 'ADMIN',
-        },
-      },
-    },
-  })
+  @ApiOkResponse({ description: 'Login realizado com sucesso', type: LoginResponseDto })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
-  login(@Body() dto: LoginDto): Promise<{
-    accessToken: string;
-    user: { id: string; name: string; email: string; role: string };
-  }> {
+  login(@Body() dto: LoginDto): Promise<LoginResponseDto> {
     return this.authService.login(dto);
   }
 
@@ -55,16 +41,9 @@ export class AuthController {
   @ApiBody({ type: ForgotPasswordDto })
   @ApiOkResponse({
     description: 'Solicitação de recuperação recebida',
-    schema: {
-      example: {
-        message:
-          'Se existir uma conta com este e-mail, enviaremos as instruções de recuperação.',
-      },
-    },
+    type: ForgotPasswordResponseDto,
   })
-  forgotPassword(
-    @Body() dto: ForgotPasswordDto,
-  ): Promise<{ message: string; resetToken?: string }> {
+  forgotPassword(@Body() dto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
     return this.authService.forgotPassword(dto);
   }
 
@@ -73,51 +52,25 @@ export class AuthController {
   @Post('reset-password')
   @HttpCode(200)
   @ApiBody({ type: ResetPasswordDto })
-  @ApiOkResponse({
-    schema: {
-      example: {
-        success: true,
-      },
-    },
-  })
+  @ApiOkResponse({ type: SuccessResponseDto })
   @ApiResponse({ status: 401, description: 'Token de recuperação inválido ou expirado' })
-  resetPassword(@Body() dto: ResetPasswordDto): Promise<{ success: boolean }> {
+  resetPassword(@Body() dto: ResetPasswordDto): Promise<SuccessResponseDto> {
     return this.authService.resetPassword(dto);
   }
 
   @Post('logout')
   @HttpCode(200)
   @ApiBearerAuth()
-  @ApiOkResponse({
-    schema: {
-      example: {
-        success: true,
-      },
-    },
-  })
-  logout(): { success: boolean } {
+  @ApiOkResponse({ type: SuccessResponseDto })
+  logout(): SuccessResponseDto {
     return { success: true };
   }
 
   @Get('me')
   @ApiBearerAuth()
-  @ApiOkResponse({
-    description: 'Dados do usuário autenticado',
-    schema: {
-      example: {
-        user: {
-          id: 'uuid',
-          name: 'Administrador',
-          email: 'admin@rfinance.local',
-          role: 'ADMIN',
-        },
-      },
-    },
-  })
+  @ApiOkResponse({ description: 'Dados do usuário autenticado', type: MeResponseDto })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
-  async me(
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<{ user: { id: string; name: string; email: string; role: string } }> {
+  async me(@CurrentUser() user: AuthenticatedUser): Promise<MeResponseDto> {
     return { user: await this.authService.me(user.userId) };
   }
 }
