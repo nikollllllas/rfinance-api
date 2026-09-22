@@ -8,8 +8,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { MessageResponseDto } from '../../common/dto/message-response.dto';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { CategoriesService } from './categories.service';
+import { CategoryResponseDto } from './dto/category-response.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -21,21 +23,7 @@ export class CategoriesController {
 
   @Get()
   @ApiResponse({ status: 401, description: 'Não autenticado' })
-  @ApiOkResponse({
-    schema: {
-      example: [
-        {
-          id: 'uuid',
-          name: 'Alimentação',
-          color: '#22C55E',
-          icon: 'food',
-          type: 'GASTO',
-          isDefault: false,
-          userId: 'uuid',
-        },
-      ],
-    },
-  })
+  @ApiOkResponse({ type: CategoryResponseDto, isArray: true })
   list(@CurrentUser() user: AuthenticatedUser) {
     return this.categoriesService.list(user.userId);
   }
@@ -43,28 +31,14 @@ export class CategoriesController {
   @Get(':id')
   @ApiResponse({ status: 401, description: 'Não autenticado' })
   @ApiResponse({ status: 404, description: 'Categoria não encontrada' })
-  @ApiOkResponse({
-    schema: {
-      example: {
-        id: 'uuid',
-        name: 'Alimentação',
-        color: '#22C55E',
-        icon: 'food',
-        type: 'GASTO',
-        isDefault: false,
-        userId: 'uuid',
-      },
-    },
-  })
+  @ApiOkResponse({ type: CategoryResponseDto })
   getById(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.categoriesService.getById(id, user.userId);
   }
 
   @Post()
   @ApiBody({ type: CreateCategoryDto })
-  @ApiCreatedResponse({
-    description: 'Categoria criada com sucesso',
-  })
+  @ApiCreatedResponse({ description: 'Categoria criada com sucesso', type: CategoryResponseDto })
   @ApiResponse({ status: 401, description: 'Não autenticado' })
   @ApiResponse({ status: 403, description: 'Sem permissão para executar esta ação' })
   @ApiResponse({ status: 409, description: 'Uma categoria com este nome já existe' })
@@ -74,7 +48,7 @@ export class CategoriesController {
 
   @Put(':id')
   @ApiBody({ type: UpdateCategoryDto })
-  @ApiOkResponse({ description: 'Categoria atualizada com sucesso' })
+  @ApiOkResponse({ description: 'Categoria atualizada com sucesso', type: CategoryResponseDto })
   @ApiResponse({ status: 401, description: 'Não autenticado' })
   @ApiResponse({ status: 403, description: 'Sem permissão para executar esta ação' })
   @ApiResponse({ status: 404, description: 'Categoria não encontrada' })
@@ -89,13 +63,7 @@ export class CategoriesController {
 
   @Delete(':id')
   @HttpCode(200)
-  @ApiOkResponse({
-    schema: {
-      example: {
-        message: 'Categoria excluída com sucesso',
-      },
-    },
-  })
+  @ApiOkResponse({ type: MessageResponseDto })
   @ApiResponse({ status: 401, description: 'Não autenticado' })
   @ApiResponse({ status: 403, description: 'Sem permissão para executar esta ação' })
   @ApiResponse({ status: 404, description: 'Categoria não encontrada' })
