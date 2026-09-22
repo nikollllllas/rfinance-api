@@ -18,9 +18,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { MessageResponseDto } from '../../common/dto/message-response.dto';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { ListTransactionsQueryDto } from './dto/list-transactions-query.dto';
+import {
+  TransactionListResponseDto,
+  TransactionResponseDto,
+} from './dto/transaction-response.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { TransactionsService } from './transactions.service';
 
@@ -32,11 +37,7 @@ export class TransactionsController {
 
   @Get()
   @ApiResponse({ status: 400, description: 'Formato de mês inválido (YYYY-MM)' })
-  @ApiOkResponse({
-    schema: {
-      example: { transactions: [] },
-    },
-  })
+  @ApiOkResponse({ type: TransactionListResponseDto })
   list(
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: ListTransactionsQueryDto,
@@ -45,19 +46,13 @@ export class TransactionsController {
   }
 
   @Get('months')
-  @ApiOkResponse({
-    schema: {
-      example: ['2026-03', '2026-02'],
-    },
-  })
+  @ApiOkResponse({ type: String, isArray: true, schema: { example: ['2026-03', '2026-02'] } })
   listMonths(@CurrentUser() user: AuthenticatedUser) {
     return this.transactionsService.listMonths(user.userId);
   }
 
   @Get(':id')
-  @ApiOkResponse({
-    description: 'Transação encontrada',
-  })
+  @ApiOkResponse({ description: 'Transação encontrada', type: TransactionResponseDto })
   @ApiResponse({ status: 404, description: 'Transação não encontrada' })
   getById(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.transactionsService.getById(id, user.userId);
@@ -66,9 +61,8 @@ export class TransactionsController {
   @Post()
   @ApiBody({ type: CreateTransactionDto })
   @ApiCreatedResponse({
-    schema: {
-      example: { transactions: [] },
-    },
+    description: 'Uma transação, ou N parcelas quando installmentCount >= 2',
+    type: TransactionListResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Categoria não encontrada' })
   create(
@@ -80,7 +74,7 @@ export class TransactionsController {
 
   @Put(':id')
   @ApiBody({ type: UpdateTransactionDto })
-  @ApiOkResponse({ description: 'Transação atualizada' })
+  @ApiOkResponse({ description: 'Transação atualizada', type: TransactionResponseDto })
   @ApiResponse({ status: 404, description: 'Transação ou categoria não encontrada' })
   update(
     @Param('id') id: string,
@@ -92,13 +86,7 @@ export class TransactionsController {
 
   @Delete(':id')
   @HttpCode(200)
-  @ApiOkResponse({
-    schema: {
-      example: {
-        message: 'Transação apagada com sucesso',
-      },
-    },
-  })
+  @ApiOkResponse({ type: MessageResponseDto })
   remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.transactionsService.remove(id, user.userId);
   }

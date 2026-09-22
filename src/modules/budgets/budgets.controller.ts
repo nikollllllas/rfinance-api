@@ -18,11 +18,17 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { MessageResponseDto } from '../../common/dto/message-response.dto';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { BudgetsService } from './budgets.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { ListBudgetsQueryDto } from './dto/list-budgets-query.dto';
 import { ReplicateBudgetsDto } from './dto/replicate-budgets.dto';
+import {
+  BudgetProgressResponseDto,
+  BudgetResponseDto,
+  ReplicateBudgetsResponseDto,
+} from './dto/budget-response.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 
 @ApiTags('budgets')
@@ -33,7 +39,7 @@ export class BudgetsController {
 
   @Post()
   @ApiBody({ type: CreateBudgetDto })
-  @ApiCreatedResponse({ description: 'Orçamento criado com sucesso' })
+  @ApiCreatedResponse({ description: 'Orçamento criado com sucesso', type: BudgetResponseDto })
   @ApiResponse({ status: 404, description: 'Categoria não encontrada' })
   @ApiResponse({
     status: 409,
@@ -44,32 +50,28 @@ export class BudgetsController {
   }
 
   @Get()
-  @ApiOkResponse({
-    schema: {
-      example: [],
-    },
-  })
+  @ApiOkResponse({ type: BudgetResponseDto, isArray: true })
   list(@CurrentUser() user: AuthenticatedUser, @Query() query: ListBudgetsQueryDto) {
     return this.budgetsService.list(user.userId, query.month);
   }
 
   @Put()
   @ApiBody({ type: ReplicateBudgetsDto })
-  @ApiOkResponse({ description: 'Orçamentos replicados' })
+  @ApiOkResponse({ description: 'Orçamentos replicados', type: ReplicateBudgetsResponseDto })
   replicate(@CurrentUser() user: AuthenticatedUser, @Body() dto: ReplicateBudgetsDto) {
     return this.budgetsService.replicate(user.userId, dto);
   }
 
   @Get(':id')
   @ApiResponse({ status: 404, description: 'Orçamento não encontrado' })
-  @ApiOkResponse({ description: 'Orçamento encontrado' })
+  @ApiOkResponse({ description: 'Orçamento encontrado', type: BudgetResponseDto })
   getById(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.budgetsService.getById(id, user.userId);
   }
 
   @Put(':id')
   @ApiBody({ type: UpdateBudgetDto })
-  @ApiOkResponse({ description: 'Orçamento atualizado' })
+  @ApiOkResponse({ description: 'Orçamento atualizado', type: BudgetResponseDto })
   update(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -80,17 +82,13 @@ export class BudgetsController {
 
   @Delete(':id')
   @HttpCode(200)
-  @ApiOkResponse({
-    schema: {
-      example: { message: 'Orçamento apagado com sucesso' },
-    },
-  })
+  @ApiOkResponse({ type: MessageResponseDto })
   remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.budgetsService.remove(id, user.userId);
   }
 
   @Get(':id/progress')
-  @ApiOkResponse({ description: 'Progresso do orçamento do mês' })
+  @ApiOkResponse({ description: 'Progresso do orçamento do mês', type: BudgetProgressResponseDto })
   progress(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.budgetsService.getProgress(id, user.userId);
   }
