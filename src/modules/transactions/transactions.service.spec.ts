@@ -24,6 +24,9 @@ describe('TransactionsService', () => {
             update: jest.fn(),
             delete: jest.fn(),
             listAvailableMonths: jest.fn(),
+            findTransactionIdsByIdempotencyKey: jest.fn(),
+            saveIdempotencyKey: jest.fn(),
+            findManyByIdsAndUserId: jest.fn(),
           },
         },
       ],
@@ -40,6 +43,49 @@ describe('TransactionsService', () => {
 
     expect(repository.findManyByUserId).toHaveBeenCalledWith('user-1');
     expect(repository.findManyByUserId).not.toHaveBeenCalledWith('user-2');
+  });
+
+  it('deve devolver o resultado salvo em vez de criar de novo quando a idempotency key já existe', async () => {
+    (repository.findTransactionIdsByIdempotencyKey as jest.Mock).mockResolvedValue(['tx-1']);
+    (repository.findManyByIdsAndUserId as jest.Mock).mockResolvedValue([{ id: 'tx-1' }]);
+
+    const user = { userId: 'user-1', email: 'user@rfinance.local', role: Role.USER, permissions: [] };
+    const result = await service.create(
+      user,
+      {
+        description: 'Mercado',
+        amount: 100,
+        date: '2026-03-01T00:00:00.000Z',
+        type: TransactionType.GASTO,
+        categoryId: 'cat-1',
+      },
+      'key-abc',
+    );
+
+    expect(result).toEqual({ transactions: [{ id: 'tx-1' }] });
+    expect(repository.findCategoryByIdAndUserId).not.toHaveBeenCalled();
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
+  it('deve salvar a idempotency key após criar quando ela ainda não existe', async () => {
+    (repository.findTransactionIdsByIdempotencyKey as jest.Mock).mockResolvedValue(null);
+    (repository.findCategoryByIdAndUserId as jest.Mock).mockResolvedValue({ id: 'cat-1' });
+    (repository.create as jest.Mock).mockResolvedValue({ id: 'tx-2' });
+
+    const user = { userId: 'user-1', email: 'user@rfinance.local', role: Role.USER, permissions: [] };
+    await service.create(
+      user,
+      {
+        description: 'Mercado',
+        amount: 100,
+        date: '2026-03-01T00:00:00.000Z',
+        type: TransactionType.GASTO,
+        categoryId: 'cat-1',
+      },
+      'key-novo',
+    );
+
+    expect(repository.saveIdempotencyKey).toHaveBeenCalledWith('user-1', 'key-novo', ['tx-2']);
   });
 
   it('deve bloquear acesso cruzado ao atualizar transação de outro usuário', async () => {
