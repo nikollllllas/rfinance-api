@@ -59,4 +59,26 @@ export class TransactionsRepository {
   listAvailableMonths(_userId: string): Promise<string[]> {
     throw new Error('Not implemented');
   }
+
+  findTransactionIdsByIdempotencyKey(
+    _userId: string,
+    _key: string,
+  ): Promise<string[] | null> {
+    throw new Error('Not implemented');
+  }
+
+  saveIdempotencyKey(
+    _userId: string,
+    _key: string,
+    _transactionIds: string[],
+  ): Promise<void> {
+    throw new Error('Not implemented');
+  }
+
+  findManyByIdsAndUserId(
+    _ids: string[],
+    _userId: string,
+  ): Promise<TransactionWithCategory[]> {
+    throw new Error('Not implemented');
+  }
 }
