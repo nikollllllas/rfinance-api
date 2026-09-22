@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   Param,
   Post,
@@ -13,6 +14,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiHeader,
   ApiOkResponse,
   ApiResponse,
   ApiTags,
@@ -60,6 +62,12 @@ export class TransactionsController {
 
   @Post()
   @ApiBody({ type: CreateTransactionDto })
+  @ApiHeader({
+    name: 'Idempotency-Key',
+    required: false,
+    description:
+      'Opcional. Reenviar a mesma chave devolve o resultado da primeira criação em vez de duplicar (usado pela fila offline do app).',
+  })
   @ApiCreatedResponse({
     description: 'Uma transação, ou N parcelas quando installmentCount >= 2',
     type: TransactionListResponseDto,
@@ -68,8 +76,9 @@ export class TransactionsController {
   create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateTransactionDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    return this.transactionsService.create(user, dto);
+    return this.transactionsService.create(user, dto, idempotencyKey);
   }
 
   @Put(':id')

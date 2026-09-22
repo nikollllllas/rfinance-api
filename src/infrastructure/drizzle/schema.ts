@@ -165,10 +165,31 @@ export const budgets = pgTable(
   }),
 );
 
+export const idempotencyKeys = pgTable(
+  'idempotency_keys',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
+    userId: uuid('userId')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    key: text('key').notNull(),
+    transactionIds: text('transactionIds').array().notNull(),
+    createdAt: timestamp('createdAt', { withTimezone: false })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    userKeyUnique: unique('idempotency_keys_userId_key_key').on(t.userId, t.key),
+  }),
+);
+
 export type DbUser = typeof users.$inferSelect;
 export type DbCategory = typeof categories.$inferSelect;
 export type DbTransaction = typeof transactions.$inferSelect;
 export type DbBudget = typeof budgets.$inferSelect;
+export type DbIdempotencyKey = typeof idempotencyKeys.$inferSelect;
 export type DbPasswordRecoveryToken = typeof passwordRecoveryTokens.$inferSelect;
 
 export const CategoryType = {

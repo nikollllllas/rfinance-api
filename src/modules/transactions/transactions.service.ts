@@ -32,7 +32,21 @@ const splitInstallmentAmounts = (amount: number, count: number): number[] => {
 export class TransactionsService {
   constructor(private readonly transactionsRepository: TransactionsRepository) {}
 
-  async create(user: AuthenticatedUser, dto: CreateTransactionDto) {
+  async create(user: AuthenticatedUser, dto: CreateTransactionDto, idempotencyKey?: string) {
+    if (idempotencyKey) {
+      const existingIds = await this.transactionsRepository.findTransactionIdsByIdempotencyKey(
+        user.userId,
+        idempotencyKey,
+      );
+      if (existingIds) {
+        const transactions = await this.transactionsRepository.findManyByIdsAndUserId(
+          existingIds,
+          user.userId,
+        );
+        return { transactions };
+      }
+    }
+
     const category = await this.transactionsRepository.findCategoryByIdAndUserId(
       dto.categoryId,
       user.userId,
@@ -63,6 +77,11 @@ export class TransactionsService {
         tag: dto.tag,
         paymentMethod: normalizedPaymentMethod ?? undefined,
       });
+      if (idempotencyKey) {
+        await this.transactionsRepository.saveIdempotencyKey(user.userId, idempotencyKey, [
+          transaction.id,
+        ]);
+      }
       return { transactions: [transaction] };
     }
 
@@ -84,6 +103,13 @@ export class TransactionsService {
     }));
     const transactions =
       await this.transactionsRepository.createManyInTransaction(payload);
+    if (idempotencyKey) {
+      await this.transactionsRepository.saveIdempotencyKey(
+        user.userId,
+        idempotencyKey,
+        transactions.map((t) => t.id),
+      );
+    }
     return { transactions };
   }
 
