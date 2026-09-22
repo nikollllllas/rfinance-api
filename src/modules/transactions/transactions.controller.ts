@@ -63,7 +63,7 @@ export class TransactionsController {
   @Post()
   @ApiBody({ type: CreateTransactionDto })
   @ApiHeader({
-    name: 'Idempotency-Key',
+    name: 'idempotency-key',
     required: false,
     description:
       'Opcional. Reenviar a mesma chave devolve o resultado da primeira criação em vez de duplicar (usado pela fila offline do app).',
