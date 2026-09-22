@@ -14,7 +14,7 @@ export class CategoryResponseDto {
   @ApiProperty({ example: '#22C55E' })
   color!: string;
 
-  @ApiPropertyOptional({ example: 'food', nullable: true })
+  @ApiPropertyOptional({ type: String, example: 'food', nullable: true })
   icon!: string | null;
 
   @ApiProperty({ example: false })
