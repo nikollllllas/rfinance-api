@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { endOfMonth, format, parse, startOfMonth, subMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { DashboardRepository } from './dashboard.repository';
 
 // 0 when both are 0; 100 when there is no baseline but current is positive.
@@ -36,7 +37,12 @@ export class DashboardService {
           .reduce((acc, row) => acc + Number(row.total ?? 0), 0);
       const income = sum('GANHO');
       const expenses = sum('GASTO');
-      return { month: format(monthDate, 'MMM'), income, expenses, savings: income - expenses };
+      return {
+        month: format(monthDate, 'MMM', { locale: ptBR }),
+        income,
+        expenses,
+        savings: income - expenses,
+      };
     });
     const { income: currentIncome, expenses: currentExpenses } = monthlyData[5];
     const { income: previousIncome, expenses: previousExpenses } = monthlyData[4];
