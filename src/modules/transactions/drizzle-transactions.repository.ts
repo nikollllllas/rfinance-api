@@ -1,7 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../infrastructure/drizzle/drizzle.service';
-import { categories, DbCategory, DbTransaction, transactions } from '../../infrastructure/drizzle/schema';
+import {
+  categories,
+  DbCategory,
+  DbTransaction,
+  idempotencyKeys,
+  transactions,
+} from '../../infrastructure/drizzle/schema';
 import { TransactionsRepository } from './transactions.repository';
 
 @Injectable()
@@ -181,5 +187,44 @@ export class DrizzleTransactionsRepository extends TransactionsRepository {
       ORDER BY month DESC
     `);
     return (rows as any).rows.map((row: { month: string }) => row.month);
+  }
+
+  async findTransactionIdsByIdempotencyKey(
+    userId: string,
+    key: string,
+  ): Promise<string[] | null> {
+    const rows = await this.drizzle.db
+      .select({ transactionIds: idempotencyKeys.transactionIds })
+      .from(idempotencyKeys)
+      .where(and(eq(idempotencyKeys.userId, userId), eq(idempotencyKeys.key, key)))
+      .limit(1);
+    return rows[0]?.transactionIds ?? null;
+  }
+
+  async saveIdempotencyKey(
+    userId: string,
+    key: string,
+    transactionIds: string[],
+  ): Promise<void> {
+    await this.drizzle.db.insert(idempotencyKeys).values({ userId, key, transactionIds });
+  }
+
+  async findManyByIdsAndUserId(
+    ids: string[],
+    userId: string,
+  ): Promise<(DbTransaction & { category: DbCategory })[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.drizzle.db
+      .select({ transaction: transactions, category: categories })
+      .from(transactions)
+      .innerJoin(categories, eq(transactions.categoryId, categories.id))
+      .where(and(inArray(transactions.id, ids), eq(transactions.userId, userId)));
+    const byId = new Map(
+      rows.map((row) => [
+        row.transaction.id,
+        { ...(row.transaction as unknown as DbTransaction), category: row.category as unknown as DbCategory },
+      ]),
+    );
+    return ids.map((id) => byId.get(id)).filter((t): t is DbTransaction & { category: DbCategory } => Boolean(t));
   }
 }
