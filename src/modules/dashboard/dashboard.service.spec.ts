@@ -51,14 +51,7 @@ describe('DashboardService.getSummary', () => {
   it('returns 6 monthly entries and the expected response keys', async () => {
     const res = await build().getSummary('u', '2026-03');
     expect(res.monthlyData).toHaveLength(6);
-    expect(res.monthlyData.map((m) => m.month)).toEqual([
-      'Oct',
-      'Nov',
-      'Dec',
-      'Jan',
-      'Feb',
-      'Mar',
-    ]);
+    expect(res.monthlyData.map((m) => m.month)).toEqual(['out', 'nov', 'dez', 'jan', 'fev', 'mar']);
     expect(Object.keys(res).sort()).toEqual([
       'budgets',
       'expensesByCategory',
