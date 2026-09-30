@@ -3,7 +3,6 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
@@ -169,7 +168,7 @@ export class UsersService {
   async deleteOwnAccount(userId: string, password: string): Promise<void> {
     const user = await this.findByIdOrThrow(userId);
     if (!(await bcrypt.compare(password, user.passwordHash))) {
-      throw new UnauthorizedException('Senha incorreta');
+      throw new ForbiddenException('Senha incorreta');
     }
     await this.usersRepository.delete(userId);
   }
