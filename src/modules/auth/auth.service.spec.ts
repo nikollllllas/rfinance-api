@@ -299,4 +299,42 @@ describe('AuthService', () => {
       'NewPassword@123',
     );
   });
+
+  it('não revoga sessões com token stale (tokenVersion já mudou)', async () => {
+    (jwtService.verifyAsync as jest.Mock).mockResolvedValue({
+      userId: 'user-id',
+      email: 'u@x.com',
+      role: Role.USER,
+      tv: 1,
+    });
+    (usersService.findById as jest.Mock).mockResolvedValue({
+      id: 'user-id',
+      email: 'u@x.com',
+      role: Role.USER,
+      tokenVersion: 2,
+    });
+
+    await service.logout('stale-token');
+
+    expect(usersService.revokeSessions).not.toHaveBeenCalled();
+  });
+
+  it('revoga sessões com token atual', async () => {
+    (jwtService.verifyAsync as jest.Mock).mockResolvedValue({
+      userId: 'user-id',
+      email: 'u@x.com',
+      role: Role.USER,
+      tv: 1,
+    });
+    (usersService.findById as jest.Mock).mockResolvedValue({
+      id: 'user-id',
+      email: 'u@x.com',
+      role: Role.USER,
+      tokenVersion: 1,
+    });
+
+    await service.logout('current-token');
+
+    expect(usersService.revokeSessions).toHaveBeenCalledWith('user-id');
+  });
 });
