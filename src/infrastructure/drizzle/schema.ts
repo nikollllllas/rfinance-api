@@ -186,6 +186,24 @@ export const idempotencyKeys = pgTable(
   }),
 );
 
+// Sem FK: o registro precisa sobreviver à exclusão do usuário.
+export const auditLogs = pgTable(
+  'audit_logs',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => randomUUID()),
+    action: text('action').notNull(),
+    actorId: uuid('actorId'),
+    targetId: text('targetId'),
+    createdAt: timestamp('createdAt', { withTimezone: false })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    actorIdx: index('audit_logs_actorId_idx').on(t.actorId),
+    createdAtIdx: index('audit_logs_createdAt_idx').on(t.createdAt),
+  }),
+);
+
 export type DbUser = typeof users.$inferSelect;
 export type DbCategory = typeof categories.$inferSelect;
 export type DbTransaction = typeof transactions.$inferSelect;

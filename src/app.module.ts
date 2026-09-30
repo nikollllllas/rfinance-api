@@ -6,6 +6,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { DrizzleModule } from './infrastructure/drizzle/drizzle.module';
+import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BudgetsModule } from './modules/budgets/budgets.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -22,6 +23,7 @@ import { UsersModule } from './modules/users/users.module';
       skipIf: () => process.env.NODE_ENV === 'test',
     }),
     DrizzleModule,
+    AuditModule,
     RbacModule,
     UsersModule,
     AuthModule,
