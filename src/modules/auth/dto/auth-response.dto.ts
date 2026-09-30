@@ -16,9 +16,6 @@ export class UserSummaryDto {
 }
 
 export class LoginResponseDto {
-  @ApiProperty({ example: 'jwt.token.value' })
-  accessToken!: string;
-
   @ApiProperty({ type: () => UserSummaryDto })
   user!: UserSummaryDto;
 }

@@ -82,6 +82,16 @@ export class AuthService {
     };
   }
 
+  async logout(token: string | null): Promise<void> {
+    if (!token) return;
+    try {
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
+      await this.usersService.revokeSessions(payload.userId);
+    } catch {
+      // token inválido/expirado: nada a revogar, o cookie é limpo mesmo assim
+    }
+  }
+
   async validateJwtPayload(payload: JwtPayload): Promise<AuthenticatedUser> {
     const user = await this.usersService.findById(payload.userId);
     if (!user || user.tokenVersion !== payload.tv) {

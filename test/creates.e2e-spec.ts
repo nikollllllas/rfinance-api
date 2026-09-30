@@ -11,6 +11,13 @@ import { TransactionType } from '../src/infrastructure/drizzle/schema';
 
 const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
 
+const tokenFrom = (res: request.Response): string => {
+  const raw = ([] as string[]).concat(res.headers['set-cookie'] ?? []);
+  const cookie = raw.find((c) => c.startsWith('rfinance_token='));
+  if (!cookie) throw new Error('login sem cookie de sessão');
+  return decodeURIComponent(cookie.split(';')[0].split('=')[1]);
+};
+
 (shouldRun ? describe : describe.skip)('Creates (e2e, DB)', () => {
   let app: INestApplication<App>;
   let drizzle: DrizzleService;
@@ -110,7 +117,7 @@ const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
       .send({ email: 'admin@rfinance.local', password: 'Admin@123' })
       .expect(200);
 
-    const token = login.body.accessToken as string;
+    const token = tokenFrom(login);
     expect(token).toBeDefined();
 
     const suffix = Date.now();
@@ -169,7 +176,7 @@ const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
       .send({ email: 'admin@rfinance.local', password: 'Admin@123' })
       .expect(200);
 
-    const adminToken = adminLogin.body.accessToken as string;
+    const adminToken = tokenFrom(adminLogin);
     const suffix = Date.now();
     const userEmail = `e2e-user-${suffix}@rfinance.local`;
     const initialPassword = 'Initial@123';
@@ -195,7 +202,7 @@ const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
       .post('/v1/auth/login')
       .send({ email: userEmail, password: initialPassword })
       .expect(200);
-    const userToken = userLogin.body.accessToken as string;
+    const userToken = tokenFrom(userLogin);
 
     await request(app.getHttpServer())
       .put('/v1/users/me')
@@ -236,5 +243,24 @@ const shouldRun = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
       .post('/v1/auth/login')
       .send({ email: userEmail, password: finalPassword })
       .expect(200);
+  });
+
+  it('logout revoga o token mesmo se ele for reapresentado', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({ email: 'admin@rfinance.local', password: 'Admin@123' })
+      .expect(200);
+    const token = tokenFrom(login);
+    expect(login.body.accessToken).toBeUndefined();
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/logout')
+      .set('Cookie', `rfinance_token=${token}`)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/v1/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(401);
   });
 });
