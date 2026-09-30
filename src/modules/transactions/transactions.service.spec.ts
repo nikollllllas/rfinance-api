@@ -104,4 +104,30 @@ describe('TransactionsService', () => {
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
+
+  it('deve repassar o userId para o repository.update', async () => {
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({ id: 'tx-id' });
+    (repository.update as jest.Mock).mockResolvedValue({ id: 'tx-id' });
+
+    await service.update(
+      'tx-id',
+      { userId: 'user-id', email: 'user@rfinance.local', role: Role.USER, permissions: [] },
+      { type: TransactionType.GASTO },
+    );
+
+    expect(repository.update).toHaveBeenCalledWith(
+      'tx-id',
+      'user-id',
+      expect.any(Object),
+    );
+  });
+
+  it('deve repassar o userId para o repository.delete', async () => {
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({ id: 'tx-id' });
+    (repository.delete as jest.Mock).mockResolvedValue({ id: 'tx-id' });
+
+    await service.remove('tx-id', 'user-id');
+
+    expect(repository.delete).toHaveBeenCalledWith('tx-id', 'user-id');
+  });
 });

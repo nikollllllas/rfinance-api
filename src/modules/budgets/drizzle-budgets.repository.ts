@@ -93,6 +93,7 @@ export class DrizzleBudgetsRepository extends BudgetsRepository {
 
   async update(
     id: string,
+    userId: string,
     data: Partial<{
       amount: number | string;
       budgetMonth: string;
@@ -102,7 +103,7 @@ export class DrizzleBudgetsRepository extends BudgetsRepository {
     const rows = await this.drizzle.db
       .update(budgets)
       .set({ ...(data as object), updatedAt: new Date() })
-      .where(eq(budgets.id, id))
+      .where(and(eq(budgets.id, id), eq(budgets.userId, userId)))
       .returning();
     const updated = rows[0];
     const categoryRows = await this.drizzle.db
@@ -116,10 +117,10 @@ export class DrizzleBudgetsRepository extends BudgetsRepository {
     };
   }
 
-  async delete(id: string): Promise<DbBudget> {
+  async delete(id: string, userId: string): Promise<DbBudget> {
     const rows = await this.drizzle.db
       .delete(budgets)
-      .where(eq(budgets.id, id))
+      .where(and(eq(budgets.id, id), eq(budgets.userId, userId)))
       .returning();
     return rows[0] as unknown as DbBudget;
   }
