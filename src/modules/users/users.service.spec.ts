@@ -2,7 +2,6 @@ import {
   ConflictException,
   ForbiddenException,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
@@ -300,7 +299,7 @@ describe('UsersService', () => {
     it('recusa com senha errada e não exclui', async () => {
       (repository.findById as jest.Mock).mockResolvedValue({ id: 'u1', passwordHash: 'h' });
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-      await expect(service.deleteOwnAccount('u1', 'errada')).rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(service.deleteOwnAccount('u1', 'errada')).rejects.toBeInstanceOf(ForbiddenException);
       expect(repository.delete).not.toHaveBeenCalled();
     });
   });

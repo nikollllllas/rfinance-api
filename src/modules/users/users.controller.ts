@@ -84,7 +84,7 @@ export class UsersController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @ApiBody({ type: DeleteOwnAccountDto })
   @ApiOkResponse({ type: SuccessResponseDto })
-  @ApiResponse({ status: 401, description: 'Senha incorreta' })
+  @ApiResponse({ status: 403, description: 'Senha incorreta' })
   async deleteOwnAccount(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: DeleteOwnAccountDto,
