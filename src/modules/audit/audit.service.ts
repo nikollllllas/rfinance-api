@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DrizzleService } from '../../infrastructure/drizzle/drizzle.service';
 import { auditLogs } from '../../infrastructure/drizzle/schema';
 
@@ -16,9 +16,19 @@ export type AuditAction =
 // ponytail: insert direto, sem repositório abstrato; extrair se ganhar consultas.
 @Injectable()
 export class AuditService {
+  private readonly logger = new Logger(AuditService.name);
+
   constructor(private readonly drizzle: DrizzleService) {}
 
+  // Falha ao gravar auditoria não pode derrubar a operação original: registra e segue.
   async log(action: AuditAction, actorId: string | null, targetId: string | null = null): Promise<void> {
-    await this.drizzle.db.insert(auditLogs).values({ action, actorId, targetId });
+    try {
+      await this.drizzle.db.insert(auditLogs).values({ action, actorId, targetId });
+    } catch (err) {
+      this.logger.error(
+        `Falha ao gravar auditoria: ${action}`,
+        err instanceof Error ? err.stack : String(err),
+      );
+    }
   }
 }
