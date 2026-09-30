@@ -7,7 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { Role } from '../../common/enums/role.enum';
 import { UsersRepository } from './users.repository';
-import { UsersService } from './users.service';
+import { PRIVACY_POLICY_VERSION, UsersService } from './users.service';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn(),
@@ -301,6 +301,14 @@ describe('UsersService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
       await expect(service.deleteOwnAccount('u1', 'errada')).rejects.toBeInstanceOf(ForbiddenException);
       expect(repository.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  it('registra consentimento com data e versão da política', async () => {
+    await service.acceptPrivacy('u1');
+    expect(repository.update).toHaveBeenCalledWith('u1', {
+      privacyAcceptedAt: expect.any(Date),
+      privacyPolicyVersion: PRIVACY_POLICY_VERSION,
     });
   });
 });

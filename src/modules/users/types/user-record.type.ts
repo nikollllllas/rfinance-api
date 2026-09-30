@@ -7,6 +7,8 @@ export type UserRecord = {
   passwordHash: string;
   role: Role;
   tokenVersion: number;
+  privacyAcceptedAt: Date | null;
+  privacyPolicyVersion: string | null;
   createdAt: Date;
   updatedAt: Date;
 };

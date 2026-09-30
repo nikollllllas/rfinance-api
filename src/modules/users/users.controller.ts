@@ -97,6 +97,15 @@ export class UsersController {
     return { success: true };
   }
 
+  @Post('me/privacy-consent')
+  @HttpCode(200)
+  @ApiOkResponse({ type: SuccessResponseDto })
+  async acceptPrivacy(@CurrentUser() user: AuthenticatedUser): Promise<SuccessResponseDto> {
+    await this.usersService.acceptPrivacy(user.userId);
+    await this.audit.log('user.privacy_consent', user.userId);
+    return { success: true };
+  }
+
   @Put(':id')
   @Permissions(Permission.USERS_MANAGE)
   @ApiBody({ type: UpdateUserByAdminDto })

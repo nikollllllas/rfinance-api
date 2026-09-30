@@ -13,7 +13,7 @@ import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { AuditService } from '../audit/audit.service';
 import { MailService } from '../mail/mail.service';
 import { RbacService } from '../rbac/rbac.service';
-import { UsersService } from '../users/users.service';
+import { PRIVACY_POLICY_VERSION, UsersService } from '../users/users.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -73,6 +73,8 @@ export class AuthService {
     name: string;
     email: string;
     role: Role;
+    privacyAcceptedAt: Date | null;
+    privacyPolicyVersion: string | null;
   }> {
     const user = await this.usersService.findById(userId);
     if (!user) {
@@ -84,6 +86,9 @@ export class AuthService {
       name: user.name,
       email: user.email,
       role: user.role as Role,
+      privacyAcceptedAt:
+        user.privacyPolicyVersion === PRIVACY_POLICY_VERSION ? user.privacyAcceptedAt : null,
+      privacyPolicyVersion: user.privacyPolicyVersion,
     };
   }
 
