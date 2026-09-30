@@ -96,6 +96,9 @@ export class AuthService {
     if (!token) return;
     try {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
+      // Garante que o token ainda é a sessão vigente (tokenVersion bate e o
+      // usuário existe); um token stale (já revogado) não deve revogar de novo.
+      await this.validateJwtPayload(payload);
       await this.usersService.revokeSessions(payload.userId);
       await this.audit.log('auth.logout', payload.userId);
     } catch {
