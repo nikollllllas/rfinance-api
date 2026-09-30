@@ -8,4 +8,7 @@ describe('tokenFromCookieHeader', () => {
     expect(tokenFromCookieHeader(undefined)).toBeNull();
     expect(tokenFromCookieHeader('x_rfinance_token=abc')).toBeNull();
   });
+  it('retorna null se o valor do cookie estiver malformado', () => {
+    expect(tokenFromCookieHeader('rfinance_token=abc%zz')).toBeNull();
+  });
 });
