@@ -14,4 +14,8 @@ describe('isDatabaseUrlSafe', () => {
     expect(isDatabaseUrlSafe('postgres://u:p@dpg-abc123-a/db', 'production')).toBe(true);
     expect(isDatabaseUrlSafe('postgres://u:p@db.example.com/db', 'development')).toBe(true);
   });
+
+  it('rejeita URL malformada', () => {
+    expect(isDatabaseUrlSafe('not a url', 'production')).toBe(false);
+  });
 });
