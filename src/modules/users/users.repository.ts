@@ -91,4 +91,8 @@ export class UsersRepository {
   incrementTokenVersion(_id: string): Promise<void> {
     throw new Error('Not implemented');
   }
+
+  delete(_id: string): Promise<void> {
+    throw new Error('Not implemented');
+  }
 }

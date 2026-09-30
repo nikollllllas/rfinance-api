@@ -2,6 +2,7 @@ import {
   ConflictException,
   ForbiddenException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
@@ -11,6 +12,7 @@ import { UsersService } from './users.service';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn(),
+  compare: jest.fn(),
 }));
 
 describe('UsersService', () => {
@@ -31,6 +33,7 @@ describe('UsersService', () => {
             list: jest.fn(),
             count: jest.fn(),
             incrementTokenVersion: jest.fn(),
+            delete: jest.fn(),
           },
         },
       ],
@@ -284,5 +287,21 @@ describe('UsersService', () => {
     expect(result.perPage).toBe(10);
     expect(result.total).toBe(1);
     expect(result.totalPages).toBe(1);
+  });
+
+  describe('deleteOwnAccount', () => {
+    it('exclui quando a senha confere', async () => {
+      (repository.findById as jest.Mock).mockResolvedValue({ id: 'u1', passwordHash: 'h' });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      await service.deleteOwnAccount('u1', 'Senha@123');
+      expect(repository.delete).toHaveBeenCalledWith('u1');
+    });
+
+    it('recusa com senha errada e não exclui', async () => {
+      (repository.findById as jest.Mock).mockResolvedValue({ id: 'u1', passwordHash: 'h' });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      await expect(service.deleteOwnAccount('u1', 'errada')).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(repository.delete).not.toHaveBeenCalled();
+    });
   });
 });

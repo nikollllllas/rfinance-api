@@ -1,4 +1,16 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Query,
+  Res,
+} from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -7,14 +19,17 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permission } from '../../common/enums/permission.enum';
 import { SuccessResponseDto } from '../../common/dto/success-response.dto';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { AuditService } from '../audit/audit.service';
+import { AUTH_COOKIE_NAME, authCookieOptions } from '../auth/auth-cookie';
 import { AdminResetPasswordDto } from './dto/admin-reset-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { DeleteOwnAccountDto } from './dto/delete-own-account.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { ListUsersResponseDto, UserResponseDto } from './dto/user-response.dto';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
@@ -62,6 +77,24 @@ export class UsersController {
     @Body() dto: UpdateOwnProfileDto,
   ) {
     return this.usersService.updateOwnProfile(user, dto);
+  }
+
+  @Delete('me')
+  @HttpCode(200)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @ApiBody({ type: DeleteOwnAccountDto })
+  @ApiOkResponse({ type: SuccessResponseDto })
+  @ApiResponse({ status: 401, description: 'Senha incorreta' })
+  async deleteOwnAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: DeleteOwnAccountDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<SuccessResponseDto> {
+    await this.usersService.deleteOwnAccount(user.userId, dto.password);
+    await this.audit.log('user.self_delete', user.userId);
+    const { maxAge: _maxAge, ...clearOptions } = authCookieOptions();
+    res.clearCookie(AUTH_COOKIE_NAME, clearOptions);
+    return { success: true };
   }
 
   @Put(':id')

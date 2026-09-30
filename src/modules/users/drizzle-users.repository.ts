@@ -129,4 +129,8 @@ export class DrizzleUsersRepository extends UsersRepository {
       .set({ tokenVersion: sql`${users.tokenVersion} + 1`, updatedAt: new Date() })
       .where(eq(users.id, id));
   }
+
+  async delete(id: string): Promise<void> {
+    await this.drizzle.db.delete(users).where(eq(users.id, id));
+  }
 }

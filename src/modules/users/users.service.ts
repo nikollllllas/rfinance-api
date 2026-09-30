@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
@@ -163,6 +164,14 @@ export class UsersService {
 
   revokeSessions(userId: string): Promise<void> {
     return this.usersRepository.incrementTokenVersion(userId);
+  }
+
+  async deleteOwnAccount(userId: string, password: string): Promise<void> {
+    const user = await this.findByIdOrThrow(userId);
+    if (!(await bcrypt.compare(password, user.passwordHash))) {
+      throw new UnauthorizedException('Senha incorreta');
+    }
+    await this.usersRepository.delete(userId);
   }
 
   createPasswordRecoveryToken(input: {
