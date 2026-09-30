@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Role } from '../../common/enums/role.enum';
+import { AuditService } from '../audit/audit.service';
 import { MailService } from '../mail/mail.service';
 import { RbacService } from '../rbac/rbac.service';
 import { UsersService } from '../users/users.service';
@@ -18,6 +19,7 @@ describe('AuthService', () => {
   let usersService: UsersService;
   let jwtService: JwtService;
   let mailService: MailService;
+  let auditService: AuditService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -50,6 +52,12 @@ describe('AuthService', () => {
             sendPasswordRecoveryEmail: jest.fn(),
           },
         },
+        {
+          provide: AuditService,
+          useValue: {
+            log: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -57,6 +65,7 @@ describe('AuthService', () => {
     usersService = module.get<UsersService>(UsersService);
     jwtService = module.get<JwtService>(JwtService);
     mailService = module.get<MailService>(MailService);
+    auditService = module.get<AuditService>(AuditService);
   });
 
   it('deve autenticar com credenciais válidas', async () => {
@@ -181,6 +190,13 @@ describe('AuthService', () => {
     });
     await service.resetPassword({ token: 'tok', password: 'NovaSenha@123' });
     expect(usersService.setPassword).toHaveBeenCalledWith('user-id', 'NovaSenha@123');
+  });
+
+  it('audita login com falha sem vazar se o e-mail existe', async () => {
+    (usersService.findByEmail as jest.Mock).mockResolvedValue({ id: 'user-id', passwordHash: 'h' });
+    (bcrypt.compare as jest.MockedFunction<typeof bcrypt.compare>).mockResolvedValue(false);
+    await expect(service.login({ email: 'u@x.com', password: 'errada' })).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(auditService.log).toHaveBeenCalledWith('auth.login_failed', 'user-id');
   });
 
   it('deve retornar resposta neutra em forgot password com email inexistente', async () => {

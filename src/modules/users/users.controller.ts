@@ -12,6 +12,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permission } from '../../common/enums/permission.enum';
 import { SuccessResponseDto } from '../../common/dto/success-response.dto';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
+import { AuditService } from '../audit/audit.service';
 import { AdminResetPasswordDto } from './dto/admin-reset-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
@@ -24,7 +25,10 @@ import { UsersService } from './users.service';
 @ApiBearerAuth()
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get()
   @Permissions(Permission.USERS_MANAGE)
@@ -42,8 +46,10 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Não autenticado' })
   @ApiResponse({ status: 403, description: 'Sem permissão para executar esta ação' })
   @ApiResponse({ status: 409, description: 'E-mail já está em uso' })
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  async create(@CurrentUser() actor: AuthenticatedUser, @Body() dto: CreateUserDto) {
+    const created = await this.usersService.create(dto);
+    await this.audit.log('user.create', actor.userId, created.id);
+    return created;
   }
 
   @Put('me')
@@ -66,8 +72,14 @@ export class UsersController {
   @ApiResponse({ status: 403, description: 'Sem permissão para executar esta ação' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiResponse({ status: 409, description: 'E-mail já está em uso' })
-  updateByAdmin(@Param('id') id: string, @Body() dto: UpdateUserByAdminDto) {
-    return this.usersService.updateByAdmin(id, dto);
+  async updateByAdmin(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateUserByAdminDto,
+  ) {
+    const updated = await this.usersService.updateByAdmin(id, dto);
+    await this.audit.log('user.update', actor.userId, id);
+    return updated;
   }
 
   @Put(':id/password')
@@ -79,11 +91,13 @@ export class UsersController {
   @ApiResponse({ status: 403, description: 'Sem permissão para executar esta ação' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   async adminResetPassword(
+    @CurrentUser() actor: AuthenticatedUser,
     @Param('id') id: string,
     @Body() dto: AdminResetPasswordDto,
   ): Promise<SuccessResponseDto> {
     await this.usersService.adminResetPassword(id, dto.password);
     await this.usersService.markAllPasswordRecoveryTokensAsUsed(id);
+    await this.audit.log('user.password_reset_by_admin', actor.userId, id);
     return { success: true };
   }
 }

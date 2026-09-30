@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { env } from '../../env';
 import { Role } from '../../common/enums/role.enum';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
+import { AuditService } from '../audit/audit.service';
 import { MailService } from '../mail/mail.service';
 import { RbacService } from '../rbac/rbac.service';
 import { UsersService } from '../users/users.service';
@@ -29,6 +30,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly rbacService: RbacService,
     private readonly mailService: MailService,
+    private readonly audit: AuditService,
   ) {}
 
   async login(dto: LoginDto): Promise<{
@@ -37,11 +39,13 @@ export class AuthService {
   }> {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) {
+      await this.audit.log('auth.login_failed', null);
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isPasswordValid) {
+      await this.audit.log('auth.login_failed', user.id);
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
@@ -52,6 +56,7 @@ export class AuthService {
       tv: user.tokenVersion,
     };
     const accessToken = await this.jwtService.signAsync(payload);
+    await this.audit.log('auth.login', user.id);
     return {
       accessToken,
       user: {
@@ -87,6 +92,7 @@ export class AuthService {
     try {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
       await this.usersService.revokeSessions(payload.userId);
+      await this.audit.log('auth.logout', payload.userId);
     } catch {
       // token inválido/expirado: nada a revogar, o cookie é limpo mesmo assim
     }
@@ -164,6 +170,7 @@ export class AuthService {
     }
 
     await this.usersService.setPassword(user.id, dto.password);
+    await this.audit.log('auth.password_reset', user.id);
     await this.usersService.markPasswordRecoveryTokenAsUsed(token.id);
     await this.usersService.markAllPasswordRecoveryTokensAsUsed(user.id);
 
