@@ -4,11 +4,15 @@ import { z } from 'zod';
 // Hosts sem ponto (ex.: Render internal "dpg-xxx-a") ficam em rede privada.
 export function isDatabaseUrlSafe(url: string, nodeEnv: string): boolean {
   if (nodeEnv !== 'production') return true;
-  const parsed = new URL(url);
-  if (!parsed.hostname.includes('.')) return true;
-  return ['require', 'verify-ca', 'verify-full'].includes(
-    parsed.searchParams.get('sslmode') ?? '',
-  );
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.includes('.')) return true;
+    return ['require', 'verify-ca', 'verify-full'].includes(
+      parsed.searchParams.get('sslmode') ?? '',
+    );
+  } catch {
+    return false;
+  }
 }
 
 const envSchema = z.object({
