@@ -62,6 +62,8 @@ const envSchema = z.object({
           'CORS_ALLOWED_ORIGINS must be a comma-separated list of valid URLs',
       },
     ),
+  // Nº de proxies confiáveis na frente da API. Render = 1; Render atrás do rewrite da Vercel = 2.
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
 }).refine((e) => isDatabaseUrlSafe(e.DATABASE_URL, e.NODE_ENV), {
   message: 'DATABASE_URL de host público em produção precisa de ?sslmode=require',
   path: ['DATABASE_URL'],
