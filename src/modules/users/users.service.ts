@@ -10,7 +10,7 @@ import { Role } from '../../common/enums/role.enum';
 import { UserRecord } from './types/user-record.type';
 import { UsersRepository } from './users.repository';
 
-const PASSWORD_SALT_ROUNDS = 10;
+const PASSWORD_SALT_ROUNDS = 12;
 
 export type CreateUserInput = {
   name: string;
@@ -151,12 +151,18 @@ export class UsersService {
 
   async adminResetPassword(userId: string, password: string): Promise<void> {
     await this.findByIdOrThrow(userId);
-    const passwordHash = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
-    await this.usersRepository.update(userId, { passwordHash });
+    await this.setPassword(userId, password);
   }
 
-  updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
-    return this.usersRepository.update(userId, { passwordHash }).then(() => undefined);
+  // Troca de senha sempre derruba as sessões abertas.
+  async setPassword(userId: string, password: string): Promise<void> {
+    const passwordHash = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
+    await this.usersRepository.update(userId, { passwordHash });
+    await this.usersRepository.incrementTokenVersion(userId);
+  }
+
+  revokeSessions(userId: string): Promise<void> {
+    return this.usersRepository.incrementTokenVersion(userId);
   }
 
   createPasswordRecoveryToken(input: {
