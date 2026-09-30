@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, gt, ilike, isNull, or } from 'drizzle-orm';
+import { and, count, desc, eq, gt, ilike, isNull, or, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../infrastructure/drizzle/drizzle.service';
 import { passwordRecoveryTokens, users } from '../../infrastructure/drizzle/schema';
 import { Role } from '../../common/enums/role.enum';
@@ -121,5 +121,12 @@ export class DrizzleUsersRepository extends UsersRepository {
           isNull(passwordRecoveryTokens.usedAt),
         ),
       );
+  }
+
+  async incrementTokenVersion(id: string): Promise<void> {
+    await this.drizzle.db
+      .update(users)
+      .set({ tokenVersion: sql`${users.tokenVersion} + 1`, updatedAt: new Date() })
+      .where(eq(users.id, id));
   }
 }

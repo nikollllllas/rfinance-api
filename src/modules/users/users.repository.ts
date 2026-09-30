@@ -87,4 +87,8 @@ export class UsersRepository {
   markAllPasswordRecoveryTokensAsUsed(_userId: string): Promise<void> {
     throw new Error('Not implemented');
   }
+
+  incrementTokenVersion(_id: string): Promise<void> {
+    throw new Error('Not implemented');
+  }
 }

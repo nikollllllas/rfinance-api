@@ -49,6 +49,7 @@ export class AuthService {
       userId: user.id,
       email: user.email,
       role: user.role as Role,
+      tv: user.tokenVersion,
     };
     const accessToken = await this.jwtService.signAsync(payload);
     return {
@@ -82,11 +83,16 @@ export class AuthService {
   }
 
   async validateJwtPayload(payload: JwtPayload): Promise<AuthenticatedUser> {
+    const user = await this.usersService.findById(payload.userId);
+    if (!user || user.tokenVersion !== payload.tv) {
+      throw new UnauthorizedException('Sessão expirada');
+    }
+    const role = user.role as Role;
     return {
-      userId: payload.userId,
-      email: payload.email,
-      role: payload.role,
-      permissions: this.rbacService.resolvePermissions(payload.role),
+      userId: user.id,
+      email: user.email,
+      role,
+      permissions: this.rbacService.resolvePermissions(role),
     };
   }
 
@@ -147,8 +153,7 @@ export class AuthService {
       throw new UnauthorizedException('Token de recuperação inválido ou expirado');
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, 10);
-    await this.usersService.updatePasswordHash(user.id, passwordHash);
+    await this.usersService.setPassword(user.id, dto.password);
     await this.usersService.markPasswordRecoveryTokenAsUsed(token.id);
     await this.usersService.markAllPasswordRecoveryTokensAsUsed(user.id);
 

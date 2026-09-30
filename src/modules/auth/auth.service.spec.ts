@@ -33,7 +33,8 @@ describe('AuthService', () => {
             findActivePasswordRecoveryTokenByTokenHash: jest.fn(),
             markPasswordRecoveryTokenAsUsed: jest.fn(),
             markAllPasswordRecoveryTokensAsUsed: jest.fn(),
-            updatePasswordHash: jest.fn(),
+            revokeSessions: jest.fn(),
+            setPassword: jest.fn(),
           },
         },
         {
@@ -103,6 +104,7 @@ describe('AuthService', () => {
       email: 'user@rfinance.local',
       passwordHash: 'hash',
       role: Role.USER,
+      tokenVersion: 0,
     };
     (usersService.findByEmail as jest.Mock).mockResolvedValue(user);
     (bcrypt.compare as jest.MockedFunction<typeof bcrypt.compare>).mockResolvedValue(
@@ -119,7 +121,65 @@ describe('AuthService', () => {
       userId: 'user-id',
       email: 'user@rfinance.local',
       role: Role.USER,
+      tv: 0,
     });
+  });
+
+  it('rejeita token de versão antiga', async () => {
+    (usersService.findById as jest.Mock).mockResolvedValue({
+      id: 'user-id',
+      email: 'u@x.com',
+      role: Role.USER,
+      tokenVersion: 2,
+    });
+    await expect(
+      service.validateJwtPayload({
+        userId: 'user-id',
+        email: 'u@x.com',
+        role: Role.USER,
+        tv: 1,
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('rejeita token de usuário excluído', async () => {
+    (usersService.findById as jest.Mock).mockResolvedValue(null);
+    await expect(
+      service.validateJwtPayload({
+        userId: 'gone',
+        email: 'u@x.com',
+        role: Role.USER,
+        tv: 0,
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('usa o role atual do banco, não o do token', async () => {
+    (usersService.findById as jest.Mock).mockResolvedValue({
+      id: 'user-id',
+      email: 'u@x.com',
+      role: Role.USER,
+      tokenVersion: 0,
+    });
+    const result = await service.validateJwtPayload({
+      userId: 'user-id',
+      email: 'u@x.com',
+      role: Role.ADMIN,
+      tv: 0,
+    });
+    expect(result.role).toBe(Role.USER);
+  });
+
+  it('reset de senha revoga sessões', async () => {
+    (usersService.findActivePasswordRecoveryTokenByTokenHash as jest.Mock).mockResolvedValue(
+      { id: 't', userId: 'user-id' },
+    );
+    (usersService.findById as jest.Mock).mockResolvedValue({
+      id: 'user-id',
+      tokenVersion: 0,
+    });
+    await service.resetPassword({ token: 'tok', password: 'NovaSenha@123' });
+    expect(usersService.setPassword).toHaveBeenCalledWith('user-id', 'NovaSenha@123');
   });
 
   it('deve retornar resposta neutra em forgot password com email inexistente', async () => {
@@ -201,11 +261,9 @@ describe('AuthService', () => {
       email: 'user@rfinance.local',
       role: Role.USER,
       passwordHash: 'old-hash',
+      tokenVersion: 0,
     });
-    (bcrypt.hash as jest.MockedFunction<typeof bcrypt.hash>).mockResolvedValue(
-      'new-password-hash',
-    );
-    (usersService.updatePasswordHash as jest.Mock).mockResolvedValue(undefined);
+    (usersService.setPassword as jest.Mock).mockResolvedValue(undefined);
     (usersService.markPasswordRecoveryTokenAsUsed as jest.Mock).mockResolvedValue(
       undefined,
     );
@@ -219,9 +277,9 @@ describe('AuthService', () => {
     });
 
     expect(result).toEqual({ success: true });
-    expect(usersService.updatePasswordHash).toHaveBeenCalledWith(
+    expect(usersService.setPassword).toHaveBeenCalledWith(
       'user-id',
-      'new-password-hash',
+      'NewPassword@123',
     );
   });
 });

@@ -30,6 +30,7 @@ describe('UsersService', () => {
             update: jest.fn(),
             list: jest.fn(),
             count: jest.fn(),
+            incrementTokenVersion: jest.fn(),
           },
         },
       ],
@@ -165,12 +166,14 @@ describe('UsersService', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+    (repository.incrementTokenVersion as jest.Mock).mockResolvedValue(undefined);
 
     await service.adminResetPassword('user-id', 'NewPassword@123');
 
     expect(repository.update).toHaveBeenCalledWith('user-id', {
       passwordHash: 'new-hash',
     });
+    expect(repository.incrementTokenVersion).toHaveBeenCalledWith('user-id');
   });
 
   it('deve retornar not found ao editar usuário inexistente', async () => {
