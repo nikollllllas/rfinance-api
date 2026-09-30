@@ -54,20 +54,21 @@ export class DrizzleCategoriesRepository extends CategoriesRepository {
 
   async update(
     id: string,
+    userId: string,
     data: Partial<Omit<DbCategory, 'id' | 'userId' | 'createdAt'>>,
   ): Promise<DbCategory> {
     const rows = await this.drizzle.db
       .update(categories)
       .set({ ...(data as object), updatedAt: new Date() })
-      .where(eq(categories.id, id))
+      .where(and(eq(categories.id, id), eq(categories.userId, userId)))
       .returning();
     return rows[0] as unknown as DbCategory;
   }
 
-  async delete(id: string): Promise<DbCategory> {
+  async delete(id: string, userId: string): Promise<DbCategory> {
     const rows = await this.drizzle.db
       .delete(categories)
-      .where(eq(categories.id, id))
+      .where(and(eq(categories.id, id), eq(categories.userId, userId)))
       .returning();
     return rows[0] as unknown as DbCategory;
   }
