@@ -1,12 +1,22 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+// Hosts sem ponto (ex.: Render internal "dpg-xxx-a") ficam em rede privada.
+export function isDatabaseUrlSafe(url: string, nodeEnv: string): boolean {
+  if (nodeEnv !== 'production') return true;
+  const parsed = new URL(url);
+  if (!parsed.hostname.includes('.')) return true;
+  return ['require', 'verify-ca', 'verify-full'].includes(
+    parsed.searchParams.get('sslmode') ?? '',
+  );
+}
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
-  JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must have at least 32 characters'),
   DATABASE_URL: z
     .string()
     .url('DATABASE_URL must be a valid URL')
@@ -48,6 +58,9 @@ const envSchema = z.object({
           'CORS_ALLOWED_ORIGINS must be a comma-separated list of valid URLs',
       },
     ),
+}).refine((e) => isDatabaseUrlSafe(e.DATABASE_URL, e.NODE_ENV), {
+  message: 'DATABASE_URL de host público em produção precisa de ?sslmode=require',
+  path: ['DATABASE_URL'],
 });
 
 export type Env = z.infer<typeof envSchema>;
