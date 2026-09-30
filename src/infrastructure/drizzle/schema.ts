@@ -37,6 +37,8 @@ export const users = pgTable('users', {
   passwordHash: text('passwordHash').notNull(),
   role: roleEnum('role').notNull().default('USER'),
   tokenVersion: integer('tokenVersion').notNull().default(0),
+  privacyAcceptedAt: timestamp('privacyAcceptedAt', { withTimezone: false }),
+  privacyPolicyVersion: text('privacyPolicyVersion'),
   createdAt: timestamp('createdAt', { withTimezone: false })
     .notNull()
     .$defaultFn(() => new Date()),

@@ -14,6 +14,8 @@ export type UpdateUserInput = Partial<{
   email: string;
   passwordHash: string;
   role: Role;
+  privacyAcceptedAt: Date | null;
+  privacyPolicyVersion: string | null;
 }>;
 
 export type CreatePasswordRecoveryTokenInput = {

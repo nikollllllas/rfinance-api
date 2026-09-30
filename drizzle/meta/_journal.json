@@ -43,6 +43,13 @@
       "when": 1790794224143,
       "tag": "0005_mushy_cargill",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790795361277,
+      "tag": "0006_jazzy_bruce_banner",
+      "breakpoints": true
     }
   ]
 }

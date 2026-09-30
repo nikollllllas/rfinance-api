@@ -20,9 +20,17 @@ export class LoginResponseDto {
   user!: UserSummaryDto;
 }
 
+export class MeUserDto extends UserSummaryDto {
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
+  privacyAcceptedAt!: Date | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  privacyPolicyVersion!: string | null;
+}
+
 export class MeResponseDto {
-  @ApiProperty({ type: () => UserSummaryDto })
-  user!: UserSummaryDto;
+  @ApiProperty({ type: () => MeUserDto })
+  user!: MeUserDto;
 }
 
 export class ForgotPasswordResponseDto {

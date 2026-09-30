@@ -12,6 +12,9 @@ import { UsersRepository } from './users.repository';
 
 const PASSWORD_SALT_ROUNDS = 12;
 
+// Trocar a versão quando o texto de app/privacidade mudar: força novo aceite.
+export const PRIVACY_POLICY_VERSION = '2026-10-01';
+
 export type CreateUserInput = {
   name: string;
   email: string;
@@ -163,6 +166,13 @@ export class UsersService {
 
   revokeSessions(userId: string): Promise<void> {
     return this.usersRepository.incrementTokenVersion(userId);
+  }
+
+  async acceptPrivacy(userId: string): Promise<void> {
+    await this.usersRepository.update(userId, {
+      privacyAcceptedAt: new Date(),
+      privacyPolicyVersion: PRIVACY_POLICY_VERSION,
+    });
   }
 
   async deleteOwnAccount(userId: string, password: string): Promise<void> {
