@@ -17,5 +17,10 @@ export function authCookieOptions(): CookieOptions {
 // Express 5 não parseia cookies; evita dependência só pra isso.
 export function tokenFromCookieHeader(header?: string): string | null {
   const match = header?.match(new RegExp(`(?:^|;\\s*)${AUTH_COOKIE_NAME}=([^;]+)`));
-  return match ? decodeURIComponent(match[1]) : null;
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
 }
