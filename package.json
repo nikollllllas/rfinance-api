@@ -5,6 +5,7 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "packageManager": "pnpm@12.3.4",
   "scripts": {
     "build": "nest build",
     "db:up": "docker compose up -d postgres",
