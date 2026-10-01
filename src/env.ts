@@ -34,10 +34,10 @@ const envSchema = z.object({
   FRONTEND_URL: z
     .string()
     .url()
-    .default('https://www.rfinanece-vercel.app'),
+    .default('https://rfinance.vercel.app'),
   CORS_ALLOWED_ORIGINS: z
     .string()
-    .default('https://www.rfinanece-vercel.app')
+    .default('https://rfinance.vercel.app')
     .transform((value) =>
       value
         .split(',')
