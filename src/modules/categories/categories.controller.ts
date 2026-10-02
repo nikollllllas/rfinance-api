@@ -11,7 +11,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { MessageResponseDto } from '../../common/dto/message-response.dto';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { CategoriesService } from './categories.service';
-import { CategoryResponseDto } from './dto/category-response.dto';
+import { CategoryListItemDto, CategoryResponseDto } from './dto/category-response.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -23,7 +23,7 @@ export class CategoriesController {
 
   @Get()
   @ApiResponse({ status: 401, description: 'Não autenticado' })
-  @ApiOkResponse({ type: CategoryResponseDto, isArray: true })
+  @ApiOkResponse({ type: CategoryListItemDto, isArray: true })
   list(@CurrentUser() user: AuthenticatedUser) {
     return this.categoriesService.list(user.userId);
   }

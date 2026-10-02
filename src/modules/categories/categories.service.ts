@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { DbCategory } from '../../infrastructure/drizzle/schema';
-import { CategoriesRepository } from './categories.repository';
+import { CategoriesRepository, CategoryWithUsage } from './categories.repository';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -13,7 +13,7 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 export class CategoriesService {
   constructor(private readonly categoriesRepository: CategoriesRepository) {}
 
-  list(userId: string): Promise<DbCategory[]> {
+  list(userId: string): Promise<CategoryWithUsage[]> {
     return this.categoriesRepository.findAllByUserId(userId);
   }
 

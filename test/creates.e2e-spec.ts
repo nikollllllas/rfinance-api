@@ -341,6 +341,15 @@ const tokenFrom = (res: request.Response): string => {
       .expect(201);
     const transactionId = String(tx.body.transactions[0].id);
 
+    const listWithUsage = await request(app.getHttpServer())
+      .get('/v1/categories')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const foodWithUsage = (
+      listWithUsage.body as Array<{ id: string; transactionCount: number; budgetCount: number }>
+    ).find((c) => c.id === food!.id);
+    expect(foodWithUsage).toMatchObject({ transactionCount: 1, budgetCount: 0 });
+
     await request(app.getHttpServer())
       .delete(`/v1/categories/${food!.id}`)
       .set('Authorization', `Bearer ${token}`)

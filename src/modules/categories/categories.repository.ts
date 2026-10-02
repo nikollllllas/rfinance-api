@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { DbCategory } from '../../infrastructure/drizzle/schema';
 
+export type CategoryWithUsage = DbCategory & {
+  transactionCount: number;
+  budgetCount: number;
+};
+
 type CreateCategoryInput = {
   name: string;
   color: string;
@@ -17,7 +22,7 @@ type UpdateCategoryInput = Partial<
 
 @Injectable()
 export class CategoriesRepository {
-  findAllByUserId(_userId: string): Promise<DbCategory[]> {
+  findAllByUserId(_userId: string): Promise<CategoryWithUsage[]> {
     throw new Error('Not implemented');
   }
 
