@@ -16,6 +16,7 @@ import { RbacService } from '../rbac/rbac.service';
 import { PRIVACY_POLICY_VERSION, UsersService } from '../users/users.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtPayload } from './types/jwt-payload.type';
 
@@ -66,6 +67,12 @@ export class AuthService {
         role: payload.role,
       },
     };
+  }
+
+  async register(dto: RegisterDto) {
+    const user = await this.usersService.create({ ...dto, role: Role.USER });
+    await this.audit.log('auth.register', user.id);
+    return this.login({ email: dto.email, password: dto.password });
   }
 
   async me(userId: string): Promise<{

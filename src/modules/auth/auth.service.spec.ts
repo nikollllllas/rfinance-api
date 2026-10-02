@@ -30,6 +30,7 @@ describe('AuthService', () => {
           provide: UsersService,
           useValue: {
             findByEmail: jest.fn(),
+            create: jest.fn(),
             findById: jest.fn(),
             createPasswordRecoveryToken: jest.fn(),
             findActivePasswordRecoveryTokenByTokenHash: jest.fn(),
@@ -336,5 +337,26 @@ describe('AuthService', () => {
     await service.logout('current-token');
 
     expect(usersService.revokeSessions).toHaveBeenCalledWith('user-id');
+  });
+
+  it('register cria usuário com role USER e inicia sessão', async () => {
+    (usersService.create as jest.Mock).mockResolvedValue({ id: 'new-user' });
+    const loginSpy = jest.spyOn(service, 'login').mockResolvedValue({
+      accessToken: 'token',
+      user: { id: 'new-user', name: 'Nova', email: 'nova@x.com', role: Role.USER },
+    });
+
+    await expect(
+      service.register({ name: 'Nova', email: 'nova@x.com', password: 'Senha@123' }),
+    ).resolves.toMatchObject({ accessToken: 'token' });
+
+    expect(usersService.create).toHaveBeenCalledWith({
+      name: 'Nova',
+      email: 'nova@x.com',
+      password: 'Senha@123',
+      role: Role.USER,
+    });
+    expect(auditService.log).toHaveBeenCalledWith('auth.register', 'new-user');
+    expect(loginSpy).toHaveBeenCalledWith({ email: 'nova@x.com', password: 'Senha@123' });
   });
 });

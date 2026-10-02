@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, getTableColumns, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../infrastructure/drizzle/drizzle.service';
 import { budgets, categories, DbCategory, transactions } from '../../infrastructure/drizzle/schema';
-import { CategoriesRepository } from './categories.repository';
+import { CategoriesRepository, CategoryWithUsage } from './categories.repository';
 
 @Injectable()
 export class DrizzleCategoriesRepository extends CategoriesRepository {
@@ -10,13 +10,17 @@ export class DrizzleCategoriesRepository extends CategoriesRepository {
     super();
   }
 
-  async findAllByUserId(userId: string): Promise<DbCategory[]> {
+  async findAllByUserId(userId: string): Promise<CategoryWithUsage[]> {
     const rows = await this.drizzle.db
-      .select()
+      .select({
+        ...getTableColumns(categories),
+        transactionCount: sql<number>`(select count(*)::int from "transactions" t where t."categoryId" = "categories"."id")`,
+        budgetCount: sql<number>`(select count(*)::int from "budgets" b where b."categoryId" = "categories"."id")`,
+      })
       .from(categories)
       .where(eq(categories.userId, userId))
       .orderBy(categories.name);
-    return rows as unknown as DbCategory[];
+    return rows as unknown as CategoryWithUsage[];
   }
 
   async findByIdAndUserId(id: string, userId: string): Promise<DbCategory | null> {

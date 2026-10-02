@@ -3,6 +3,7 @@ import { Throttle } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiCreatedResponse,
   ApiOkResponse,
   ApiResponse,
   ApiTags,
@@ -18,6 +19,7 @@ import { AuthService } from './auth.service';
 import { ForgotPasswordResponseDto, LoginResponseDto, MeResponseDto } from './dto/auth-response.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @ApiTags('auth')
@@ -37,6 +39,22 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<LoginResponseDto> {
     const { accessToken, user } = await this.authService.login(dto);
+    res.cookie(AUTH_COOKIE_NAME, accessToken, authCookieOptions());
+    return { user };
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @Post('register')
+  @HttpCode(201)
+  @ApiBody({ type: RegisterDto })
+  @ApiCreatedResponse({ description: 'Conta criada e sessão iniciada', type: LoginResponseDto })
+  @ApiResponse({ status: 409, description: 'E-mail já está em uso' })
+  async register(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LoginResponseDto> {
+    const { accessToken, user } = await this.authService.register(dto);
     res.cookie(AUTH_COOKIE_NAME, accessToken, authCookieOptions());
     return { user };
   }
