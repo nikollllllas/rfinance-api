@@ -43,6 +43,9 @@ export class BudgetProgressResponseDto {
   @ApiProperty({ example: false })
   isOverBudget!: boolean;
 
+  @ApiProperty({ example: 3, description: 'Transações (ganho ou gasto) da categoria no mês' })
+  transactionCount!: number;
+
   @ApiProperty({ example: '2026-03' })
   budgetMonth!: string;
 

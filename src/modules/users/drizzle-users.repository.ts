@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, gt, ilike, isNull, or } from 'drizzle-orm';
+import { and, count, desc, eq, gt, ilike, isNull, or, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../infrastructure/drizzle/drizzle.service';
-import { passwordRecoveryTokens, users } from '../../infrastructure/drizzle/schema';
+import { categories, passwordRecoveryTokens, users } from '../../infrastructure/drizzle/schema';
+import { DEFAULT_CATEGORIES } from '../categories/default-categories';
 import { Role } from '../../common/enums/role.enum';
 import { UserRecord } from './types/user-record.type';
 import {
@@ -41,8 +42,17 @@ export class DrizzleUsersRepository extends UsersRepository {
   }
 
   async create(data: CreateUserInput): Promise<UserRecord> {
-    const result = await this.drizzle.db.insert(users).values(data).returning();
-    return { ...result[0], role: result[0].role as Role };
+    return this.drizzle.db.transaction(async (tx) => {
+      const [user] = await tx.insert(users).values(data).returning();
+      await tx.insert(categories).values(
+        DEFAULT_CATEGORIES.map((category) => ({
+          ...category,
+          userId: user.id,
+          isDefault: true,
+        })),
+      );
+      return { ...user, role: user.role as Role };
+    });
   }
 
   async update(id: string, data: UpdateUserInput): Promise<UserRecord> {
@@ -121,5 +131,16 @@ export class DrizzleUsersRepository extends UsersRepository {
           isNull(passwordRecoveryTokens.usedAt),
         ),
       );
+  }
+
+  async incrementTokenVersion(id: string): Promise<void> {
+    await this.drizzle.db
+      .update(users)
+      .set({ tokenVersion: sql`${users.tokenVersion} + 1`, updatedAt: new Date() })
+      .where(eq(users.id, id));
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.drizzle.db.delete(users).where(eq(users.id, id));
   }
 }

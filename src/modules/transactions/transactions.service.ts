@@ -167,12 +167,12 @@ export class TransactionsService {
       paymentMethod:
         dto.type === TransactionType.GANHO ? null : dto.paymentMethod,
     };
-    return this.transactionsRepository.update(id, payload);
+    return this.transactionsRepository.update(id, user.userId, payload);
   }
 
   async remove(id: string, userId: string): Promise<{ message: string }> {
     await this.getById(id, userId);
-    await this.transactionsRepository.delete(id);
+    await this.transactionsRepository.delete(id, userId);
     return { message: 'Transação apagada com sucesso' };
   }
 
