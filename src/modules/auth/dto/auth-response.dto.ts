@@ -26,6 +26,9 @@ export class MeUserDto extends UserSummaryDto {
 
   @ApiProperty({ type: String, nullable: true })
   privacyPolicyVersion!: string | null;
+
+  @ApiProperty({ type: String, format: 'date-time' })
+  createdAt!: Date;
 }
 
 export class MeResponseDto {
