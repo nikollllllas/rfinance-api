@@ -82,6 +82,7 @@ export class AuthService {
     role: Role;
     privacyAcceptedAt: Date | null;
     privacyPolicyVersion: string | null;
+    createdAt: Date;
   }> {
     const user = await this.usersService.findById(userId);
     if (!user) {
@@ -96,6 +97,7 @@ export class AuthService {
       privacyAcceptedAt:
         user.privacyPolicyVersion === PRIVACY_POLICY_VERSION ? user.privacyAcceptedAt : null,
       privacyPolicyVersion: user.privacyPolicyVersion,
+      createdAt: user.createdAt,
     };
   }
 
