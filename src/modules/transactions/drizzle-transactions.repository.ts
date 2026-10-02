@@ -140,6 +140,7 @@ export class DrizzleTransactionsRepository extends TransactionsRepository {
 
   async update(
     id: string,
+    userId: string,
     data: Partial<{
       description: string;
       amount: number | string;
@@ -157,7 +158,7 @@ export class DrizzleTransactionsRepository extends TransactionsRepository {
     const rows = await this.drizzle.db
       .update(transactions)
       .set({ ...(data as object), updatedAt: new Date() })
-      .where(eq(transactions.id, id))
+      .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
       .returning();
     const updated = rows[0];
     const categoryRows = await this.drizzle.db
@@ -171,10 +172,10 @@ export class DrizzleTransactionsRepository extends TransactionsRepository {
     };
   }
 
-  async delete(id: string): Promise<DbTransaction> {
+  async delete(id: string, userId: string): Promise<DbTransaction> {
     const rows = await this.drizzle.db
       .delete(transactions)
-      .where(eq(transactions.id, id))
+      .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
       .returning();
     return rows[0] as unknown as DbTransaction;
   }

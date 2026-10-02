@@ -36,6 +36,9 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   passwordHash: text('passwordHash').notNull(),
   role: roleEnum('role').notNull().default('USER'),
+  tokenVersion: integer('tokenVersion').notNull().default(0),
+  privacyAcceptedAt: timestamp('privacyAcceptedAt', { withTimezone: false }),
+  privacyPolicyVersion: text('privacyPolicyVersion'),
   createdAt: timestamp('createdAt', { withTimezone: false })
     .notNull()
     .$defaultFn(() => new Date()),
@@ -182,6 +185,24 @@ export const idempotencyKeys = pgTable(
   },
   (t) => ({
     userKeyUnique: unique('idempotency_keys_userId_key_key').on(t.userId, t.key),
+  }),
+);
+
+// Sem FK: o registro precisa sobreviver à exclusão do usuário.
+export const auditLogs = pgTable(
+  'audit_logs',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => randomUUID()),
+    action: text('action').notNull(),
+    actorId: uuid('actorId'),
+    targetId: text('targetId'),
+    createdAt: timestamp('createdAt', { withTimezone: false })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    actorIdx: index('audit_logs_actorId_idx').on(t.actorId),
+    createdAtIdx: index('audit_logs_createdAt_idx').on(t.createdAt),
   }),
 );
 

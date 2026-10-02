@@ -73,4 +73,94 @@ describe('CategoriesService', () => {
       expect.objectContaining({ userId: regularUser.userId }),
     );
   });
+
+  it('deve repassar o userId para o repository.update', async () => {
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({
+      id: 'category-id',
+      isDefault: false,
+      name: 'Alimentação',
+    });
+    (repository.update as jest.Mock).mockResolvedValue({ id: 'category-id' });
+
+    await service.update('category-id', regularUser, { color: '#000000' });
+
+    expect(repository.update).toHaveBeenCalledWith(
+      'category-id',
+      regularUser.userId,
+      expect.any(Object),
+    );
+  });
+
+  it('deve repassar o userId para o repository.delete', async () => {
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({
+      id: 'category-id',
+      isDefault: false,
+    });
+    (repository.countTransactionsByCategory as jest.Mock).mockResolvedValue(0);
+    (repository.countBudgetsByCategory as jest.Mock).mockResolvedValue(0);
+    (repository.delete as jest.Mock).mockResolvedValue({ id: 'category-id' });
+
+    await service.remove('category-id', regularUser);
+
+    expect(repository.delete).toHaveBeenCalledWith('category-id', regularUser.userId);
+  });
+
+  it('deve permitir excluir categoria padrão sem lançamentos', async () => {
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({
+      id: 'category-id',
+      isDefault: true,
+    });
+    (repository.countTransactionsByCategory as jest.Mock).mockResolvedValue(0);
+    (repository.countBudgetsByCategory as jest.Mock).mockResolvedValue(0);
+    (repository.delete as jest.Mock).mockResolvedValue({ id: 'category-id' });
+
+    await service.remove('category-id', regularUser);
+
+    expect(repository.delete).toHaveBeenCalledWith('category-id', regularUser.userId);
+  });
+
+  it('deve bloquear (409) exclusão de categoria com transações, mesmo padrão', async () => {
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({
+      id: 'category-id',
+      isDefault: true,
+    });
+    (repository.countTransactionsByCategory as jest.Mock).mockResolvedValue(2);
+
+    await expect(service.remove('category-id', regularUser)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(repository.delete).not.toHaveBeenCalled();
+  });
+
+  it('deve bloquear (409) exclusão de categoria com orçamentos', async () => {
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({
+      id: 'category-id',
+      isDefault: false,
+    });
+    (repository.countTransactionsByCategory as jest.Mock).mockResolvedValue(0);
+    (repository.countBudgetsByCategory as jest.Mock).mockResolvedValue(1);
+
+    await expect(service.remove('category-id', regularUser)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(repository.delete).not.toHaveBeenCalled();
+  });
+
+  it('deve permitir renomear categoria padrão', async () => {
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({
+      id: 'category-id',
+      name: 'Saúde',
+      isDefault: true,
+    });
+    (repository.findByNameAndUserId as jest.Mock).mockResolvedValue(null);
+    (repository.update as jest.Mock).mockResolvedValue({ id: 'category-id' });
+
+    await service.update('category-id', regularUser, { name: 'Farmácia', type: 'GASTO' });
+
+    expect(repository.update).toHaveBeenCalledWith(
+      'category-id',
+      regularUser.userId,
+      expect.objectContaining({ name: 'Farmácia', type: 'GASTO' }),
+    );
+  });
 });

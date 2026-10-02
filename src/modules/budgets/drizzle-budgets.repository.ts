@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../infrastructure/drizzle/drizzle.service';
 import { budgets, categories, DbBudget, DbCategory, transactions } from '../../infrastructure/drizzle/schema';
 import { BudgetsRepository } from './budgets.repository';
@@ -93,6 +93,7 @@ export class DrizzleBudgetsRepository extends BudgetsRepository {
 
   async update(
     id: string,
+    userId: string,
     data: Partial<{
       amount: number | string;
       budgetMonth: string;
@@ -102,7 +103,7 @@ export class DrizzleBudgetsRepository extends BudgetsRepository {
     const rows = await this.drizzle.db
       .update(budgets)
       .set({ ...(data as object), updatedAt: new Date() })
-      .where(eq(budgets.id, id))
+      .where(and(eq(budgets.id, id), eq(budgets.userId, userId)))
       .returning();
     const updated = rows[0];
     const categoryRows = await this.drizzle.db
@@ -116,10 +117,10 @@ export class DrizzleBudgetsRepository extends BudgetsRepository {
     };
   }
 
-  async delete(id: string): Promise<DbBudget> {
+  async delete(id: string, userId: string): Promise<DbBudget> {
     const rows = await this.drizzle.db
       .delete(budgets)
-      .where(eq(budgets.id, id))
+      .where(and(eq(budgets.id, id), eq(budgets.userId, userId)))
       .returning();
     return rows[0] as unknown as DbBudget;
   }
@@ -179,5 +180,25 @@ export class DrizzleBudgetsRepository extends BudgetsRepository {
           lte(transactions.date, endDate),
         ),
       );
+  }
+
+  async countTransactionsByCategoryInRange(
+    userId: string,
+    categoryId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<number> {
+    const rows = await this.drizzle.db
+      .select({ count: sql<number>`count(*)` })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          eq(transactions.categoryId, categoryId),
+          gte(transactions.date, startDate),
+          lte(transactions.date, endDate),
+        ),
+      );
+    return Number(rows[0]?.count ?? 0);
   }
 }

@@ -19,6 +19,8 @@ services:
       - key: MAIL_FROM
         sync: false
       - key: FRONTEND_URL
-        value: https://www.rfinanece-vercel.app
+        value: https://rfinance.vercel.app
       - key: CORS_ALLOWED_ORIGINS
-        value: https://www.rfinanece-vercel.app,https://rfinanece-web-git-main-nikollas-projects-9321ac0f.vercel.app,https://rfinanece-g2pe0tq1p-nikollas-projects-9321ac0f.vercel.app
+        value: https://rfinance.vercel.app,https://www.rfinanece-vercel.app,https://rfinanece-web-git-main-nikollas-projects-9321ac0f.vercel.app,https://rfinanece-g2pe0tq1p-nikollas-projects-9321ac0f.vercel.app
+      - key: TRUST_PROXY_HOPS
+        value: "2"

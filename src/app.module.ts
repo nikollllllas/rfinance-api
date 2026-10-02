@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { ThrottlerByEmailGuard } from './common/guards/throttler-by-email.guard';
 import { DrizzleModule } from './infrastructure/drizzle/drizzle.module';
+import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BudgetsModule } from './modules/budgets/budgets.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -22,6 +24,7 @@ import { UsersModule } from './modules/users/users.module';
       skipIf: () => process.env.NODE_ENV === 'test',
     }),
     DrizzleModule,
+    AuditModule,
     RbacModule,
     UsersModule,
     AuthModule,
@@ -32,7 +35,7 @@ import { UsersModule } from './modules/users/users.module';
   ],
   controllers: [AppController],
   providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: ThrottlerByEmailGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },

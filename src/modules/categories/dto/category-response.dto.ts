@@ -29,3 +29,11 @@ export class CategoryResponseDto {
   @ApiProperty()
   updatedAt!: Date;
 }
+
+export class CategoryListItemDto extends CategoryResponseDto {
+  @ApiProperty({ example: 4, description: 'Transações lançadas nesta categoria' })
+  transactionCount!: number;
+
+  @ApiProperty({ example: 1, description: 'Orçamentos que usam esta categoria' })
+  budgetCount!: number;
+}
