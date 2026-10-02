@@ -437,4 +437,32 @@ const tokenFrom = (res: request.Response): string => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
   });
+
+  it('cadastro público cria USER com categorias e recusa role no body', async () => {
+    const suffix = Date.now();
+    const email = `e2e-register-${suffix}@rfinance.local`;
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/register')
+      .send({ name: 'Hacker', email: `x-${email}`, password: 'Senha@123', role: 'ADMIN' })
+      .expect(422);
+
+    const res = await request(app.getHttpServer())
+      .post('/v1/auth/register')
+      .send({ name: `E2E Register ${suffix}`, email, password: 'Senha@123' })
+      .expect(201);
+    createdUserIds.add(res.body.user.id as string);
+    expect(res.body.user.role).toBe('USER');
+
+    const categoriesRes = await request(app.getHttpServer())
+      .get('/v1/categories')
+      .set('Authorization', `Bearer ${tokenFrom(res)}`)
+      .expect(200);
+    expect(categoriesRes.body).toHaveLength(7);
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/register')
+      .send({ name: 'Dup', email, password: 'Senha@123' })
+      .expect(409);
+  });
 });
