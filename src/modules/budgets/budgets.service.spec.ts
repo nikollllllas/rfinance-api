@@ -32,6 +32,7 @@ describe('BudgetsService', () => {
             findPreviousMonthBudgets: jest.fn(),
             createManyForMonth: jest.fn(),
             findExpensesByCategoryInRange: jest.fn(),
+            countTransactionsByCategoryInRange: jest.fn(),
           },
         },
       ],
@@ -83,11 +84,36 @@ describe('BudgetsService', () => {
   });
 
   it('deve repassar o userId para o repository.delete', async () => {
-    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({ id: 'budget-1' });
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({
+      id: 'budget-1',
+      categoryId: 'cat-1',
+      budgetMonth: '2026-03',
+    });
+    (repository.countTransactionsByCategoryInRange as jest.Mock).mockResolvedValue(0);
     (repository.delete as jest.Mock).mockResolvedValue({ id: 'budget-1' });
 
     await service.remove('budget-1', 'user-1');
 
+    expect(repository.countTransactionsByCategoryInRange).toHaveBeenCalledWith(
+      'user-1',
+      'cat-1',
+      new Date(2026, 2, 1),
+      expect.any(Date),
+    );
     expect(repository.delete).toHaveBeenCalledWith('budget-1', 'user-1');
+  });
+
+  it('deve bloquear (409) exclusão de orçamento com transações no mês', async () => {
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({
+      id: 'budget-1',
+      categoryId: 'cat-1',
+      budgetMonth: '2026-03',
+    });
+    (repository.countTransactionsByCategoryInRange as jest.Mock).mockResolvedValue(3);
+
+    await expect(service.remove('budget-1', 'user-1')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(repository.delete).not.toHaveBeenCalled();
   });
 });
