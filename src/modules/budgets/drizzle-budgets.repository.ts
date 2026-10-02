@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../infrastructure/drizzle/drizzle.service';
 import { budgets, categories, DbBudget, DbCategory, transactions } from '../../infrastructure/drizzle/schema';
 import { BudgetsRepository } from './budgets.repository';
@@ -180,5 +180,25 @@ export class DrizzleBudgetsRepository extends BudgetsRepository {
           lte(transactions.date, endDate),
         ),
       );
+  }
+
+  async countTransactionsByCategoryInRange(
+    userId: string,
+    categoryId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<number> {
+    const rows = await this.drizzle.db
+      .select({ count: sql<number>`count(*)` })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          eq(transactions.categoryId, categoryId),
+          gte(transactions.date, startDate),
+          lte(transactions.date, endDate),
+        ),
+      );
+    return Number(rows[0]?.count ?? 0);
   }
 }

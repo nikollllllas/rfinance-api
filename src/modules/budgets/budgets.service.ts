@@ -92,7 +92,19 @@ export class BudgetsService {
   }
 
   async remove(id: string, userId: string) {
-    await this.getById(id, userId);
+    const budget = await this.getById(id, userId);
+    const { startDate, endDate } = this.monthRange(budget.budgetMonth);
+    const transactionCount = await this.budgetsRepository.countTransactionsByCategoryInRange(
+      userId,
+      budget.categoryId,
+      startDate,
+      endDate,
+    );
+    if (transactionCount > 0) {
+      throw new ConflictException(
+        'Este orçamento tem transações lançadas no mês. Exclua ou mova essas transações antes de excluí-lo.',
+      );
+    }
     await this.budgetsRepository.delete(id, userId);
     return { message: 'Orçamento apagado com sucesso' };
   }
@@ -137,16 +149,22 @@ export class BudgetsService {
 
   async getProgress(id: string, userId: string) {
     const budget = await this.getById(id, userId);
-    const [year, month] = budget.budgetMonth.split('-').map(Number);
-    const startDate = startOfMonth(new Date(year, month - 1));
-    const endDate = endOfMonth(new Date(year, month - 1));
+    const { startDate, endDate } = this.monthRange(budget.budgetMonth);
 
-    const transactions = await this.budgetsRepository.findExpensesByCategoryInRange(
-      userId,
-      budget.categoryId,
-      startDate,
-      endDate,
-    );
+    const [transactions, transactionCount] = await Promise.all([
+      this.budgetsRepository.findExpensesByCategoryInRange(
+        userId,
+        budget.categoryId,
+        startDate,
+        endDate,
+      ),
+      this.budgetsRepository.countTransactionsByCategoryInRange(
+        userId,
+        budget.categoryId,
+        startDate,
+        endDate,
+      ),
+    ]);
     const totalSpent = transactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
     const max = Number(budget.amount);
     const percentage = max > 0 ? (totalSpent / max) * 100 : 0;
@@ -155,12 +173,19 @@ export class BudgetsService {
       max,
       percentage: Math.round(percentage * 100) / 100,
       isOverBudget: totalSpent > max,
+      transactionCount,
       budgetMonth: budget.budgetMonth,
       categoryName: budget.category.name,
       categoryColor: budget.category.color,
       startDate,
       endDate,
     };
+  }
+
+  private monthRange(budgetMonth: string) {
+    const [year, month] = budgetMonth.split('-').map(Number);
+    const reference = new Date(year, month - 1);
+    return { startDate: startOfMonth(reference), endDate: endOfMonth(reference) };
   }
 
   private ensureValidMonth(month: string): void {
