@@ -9,9 +9,7 @@ export class MailService {
 
   async sendPasswordRecoveryEmail(to: string, resetUrl: string): Promise<void> {
     if (!this.client) {
-      this.logger.warn(
-        `RESEND_API_KEY não configurado — email de recuperação não enviado para ${to}`,
-      );
+      this.logger.warn('RESEND_API_KEY não configurado — email de recuperação não enviado');
       return;
     }
 
@@ -27,7 +25,7 @@ export class MailService {
     });
 
     if (error) {
-      this.logger.error(`Falha ao enviar email de recuperação para ${to}: ${error.message}`);
+      this.logger.error(`Falha ao enviar email de recuperação: ${error.message}`);
     }
   }
 }

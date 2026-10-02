@@ -10,7 +10,10 @@ import { Role } from '../../common/enums/role.enum';
 import { UserRecord } from './types/user-record.type';
 import { UsersRepository } from './users.repository';
 
-const PASSWORD_SALT_ROUNDS = 10;
+const PASSWORD_SALT_ROUNDS = 12;
+
+// Trocar a versão quando o texto de app/privacidade mudar: força novo aceite.
+export const PRIVACY_POLICY_VERSION = '2026-10-01';
 
 export type CreateUserInput = {
   name: string;
@@ -151,12 +154,33 @@ export class UsersService {
 
   async adminResetPassword(userId: string, password: string): Promise<void> {
     await this.findByIdOrThrow(userId);
-    const passwordHash = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
-    await this.usersRepository.update(userId, { passwordHash });
+    await this.setPassword(userId, password);
   }
 
-  updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
-    return this.usersRepository.update(userId, { passwordHash }).then(() => undefined);
+  // Troca de senha sempre derruba as sessões abertas.
+  async setPassword(userId: string, password: string): Promise<void> {
+    const passwordHash = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
+    await this.usersRepository.update(userId, { passwordHash });
+    await this.usersRepository.incrementTokenVersion(userId);
+  }
+
+  revokeSessions(userId: string): Promise<void> {
+    return this.usersRepository.incrementTokenVersion(userId);
+  }
+
+  async acceptPrivacy(userId: string): Promise<void> {
+    await this.usersRepository.update(userId, {
+      privacyAcceptedAt: new Date(),
+      privacyPolicyVersion: PRIVACY_POLICY_VERSION,
+    });
+  }
+
+  async deleteOwnAccount(userId: string, password: string): Promise<void> {
+    const user = await this.findByIdOrThrow(userId);
+    if (!(await bcrypt.compare(password, user.passwordHash))) {
+      throw new ForbiddenException('Senha incorreta');
+    }
+    await this.usersRepository.delete(userId);
   }
 
   createPasswordRecoveryToken(input: {

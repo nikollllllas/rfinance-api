@@ -33,11 +33,15 @@ export class CategoriesRepository {
     throw new Error('Not implemented');
   }
 
-  update(_id: string, _data: UpdateCategoryInput): Promise<DbCategory> {
+  update(
+    _id: string,
+    _userId: string,
+    _data: UpdateCategoryInput,
+  ): Promise<DbCategory> {
     throw new Error('Not implemented');
   }
 
-  delete(_id: string): Promise<DbCategory> {
+  delete(_id: string, _userId: string): Promise<DbCategory> {
     throw new Error('Not implemented');
   }
 

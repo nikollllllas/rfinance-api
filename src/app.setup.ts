@@ -1,4 +1,5 @@
 import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -7,6 +8,8 @@ import { env } from './env';
 
 // Shared by src/main.ts (local) and src/index.ts (Vercel).
 export function configureApp(app: INestApplication): void {
+  (app as NestExpressApplication).set('trust proxy', env.TRUST_PROXY_HOPS);
+
   // Swagger UI needs inline scripts/styles, so CSP is relaxed only for /docs.
   // CORP is cross-origin so the browser frontend can read API responses.
   const strict = helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } });

@@ -10,9 +10,10 @@ import * as bcrypt from 'bcrypt';
 import { env } from '../../env';
 import { Role } from '../../common/enums/role.enum';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
+import { AuditService } from '../audit/audit.service';
 import { MailService } from '../mail/mail.service';
 import { RbacService } from '../rbac/rbac.service';
-import { UsersService } from '../users/users.service';
+import { PRIVACY_POLICY_VERSION, UsersService } from '../users/users.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -29,6 +30,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly rbacService: RbacService,
     private readonly mailService: MailService,
+    private readonly audit: AuditService,
   ) {}
 
   async login(dto: LoginDto): Promise<{
@@ -37,11 +39,13 @@ export class AuthService {
   }> {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) {
+      await this.audit.log('auth.login_failed', null);
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isPasswordValid) {
+      await this.audit.log('auth.login_failed', user.id);
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
@@ -49,8 +53,10 @@ export class AuthService {
       userId: user.id,
       email: user.email,
       role: user.role as Role,
+      tv: user.tokenVersion,
     };
     const accessToken = await this.jwtService.signAsync(payload);
+    await this.audit.log('auth.login', user.id);
     return {
       accessToken,
       user: {
@@ -67,6 +73,8 @@ export class AuthService {
     name: string;
     email: string;
     role: Role;
+    privacyAcceptedAt: Date | null;
+    privacyPolicyVersion: string | null;
   }> {
     const user = await this.usersService.findById(userId);
     if (!user) {
@@ -78,15 +86,37 @@ export class AuthService {
       name: user.name,
       email: user.email,
       role: user.role as Role,
+      privacyAcceptedAt:
+        user.privacyPolicyVersion === PRIVACY_POLICY_VERSION ? user.privacyAcceptedAt : null,
+      privacyPolicyVersion: user.privacyPolicyVersion,
     };
   }
 
+  async logout(token: string | null): Promise<void> {
+    if (!token) return;
+    try {
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
+      // Garante que o token ainda é a sessão vigente (tokenVersion bate e o
+      // usuário existe); um token stale (já revogado) não deve revogar de novo.
+      await this.validateJwtPayload(payload);
+      await this.usersService.revokeSessions(payload.userId);
+      await this.audit.log('auth.logout', payload.userId);
+    } catch {
+      // token inválido/expirado: nada a revogar, o cookie é limpo mesmo assim
+    }
+  }
+
   async validateJwtPayload(payload: JwtPayload): Promise<AuthenticatedUser> {
+    const user = await this.usersService.findById(payload.userId);
+    if (!user || user.tokenVersion !== payload.tv) {
+      throw new UnauthorizedException('Sessão expirada');
+    }
+    const role = user.role as Role;
     return {
-      userId: payload.userId,
-      email: payload.email,
-      role: payload.role,
-      permissions: this.rbacService.resolvePermissions(payload.role),
+      userId: user.id,
+      email: user.email,
+      role,
+      permissions: this.rbacService.resolvePermissions(role),
     };
   }
 
@@ -147,8 +177,8 @@ export class AuthService {
       throw new UnauthorizedException('Token de recuperação inválido ou expirado');
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, 10);
-    await this.usersService.updatePasswordHash(user.id, passwordHash);
+    await this.usersService.setPassword(user.id, dto.password);
+    await this.audit.log('auth.password_reset', user.id);
     await this.usersService.markPasswordRecoveryTokenAsUsed(token.id);
     await this.usersService.markAllPasswordRecoveryTokensAsUsed(user.id);
 
