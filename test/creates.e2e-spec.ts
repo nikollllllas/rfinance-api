@@ -263,4 +263,37 @@ const tokenFrom = (res: request.Response): string => {
       .set('Authorization', `Bearer ${token}`)
       .expect(401);
   });
+
+  it('usuário novo nasce com as categorias padrão', async () => {
+    const adminLogin = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({ email: 'admin@rfinance.local', password: 'Admin@123' })
+      .expect(200);
+    const adminToken = tokenFrom(adminLogin);
+
+    const suffix = Date.now();
+    const email = `e2e-defaults-${suffix}@rfinance.local`;
+    const password = 'Initial@123';
+    const created = await request(app.getHttpServer())
+      .post('/v1/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: `E2E Defaults ${suffix}`, email, password, role: 'USER' })
+      .expect(201);
+    createdUserIds.add(created.body.id as string);
+
+    const login = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({ email, password })
+      .expect(200);
+
+    const list = await request(app.getHttpServer())
+      .get('/v1/categories')
+      .set('Authorization', `Bearer ${tokenFrom(login)}`)
+      .expect(200);
+
+    const names = (list.body as Array<{ name: string }>).map((c) => c.name).sort();
+    expect(names).toEqual(
+      ['Alimentação', 'Compras', 'Moradia', 'Outros', 'Salário', 'Saúde', 'Transporte'],
+    );
+  });
 });
