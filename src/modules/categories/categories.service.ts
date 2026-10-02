@@ -1,6 +1,5 @@
 import {
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -53,11 +52,7 @@ export class CategoriesService {
     const existing = await this.getById(id, user.userId);
 
     const payload: UpdateCategoryDto = { ...dto };
-    if (existing.isDefault) {
-      delete payload.name;
-      delete payload.type;
-      delete payload.isDefault;
-    }
+    delete payload.isDefault;
 
     if (payload.name && payload.name !== existing.name) {
       const categoryWithSameName = await this.categoriesRepository.findByNameAndUserId(
@@ -73,19 +68,13 @@ export class CategoriesService {
   }
 
   async remove(id: string, user: AuthenticatedUser): Promise<{ message: string }> {
-    const existing = await this.getById(id, user.userId);
-
-    if (existing.isDefault) {
-      throw new ForbiddenException(
-        'Não é possível excluir uma categoria padrão',
-      );
-    }
+    await this.getById(id, user.userId);
 
     const transactionCount =
       await this.categoriesRepository.countTransactionsByCategory(id, user.userId);
     if (transactionCount > 0) {
       throw new ConflictException(
-        'Não é possível excluir uma categoria que possui transações. Reatribua ou exclua as transações primeiro.',
+        'Esta categoria tem transações lançadas. Exclua ou mova essas transações para outra categoria antes de excluí-la.',
       );
     }
 
@@ -95,7 +84,7 @@ export class CategoriesService {
     );
     if (budgetCount > 0) {
       throw new ConflictException(
-        'Não é possível excluir uma categoria que possui orçamentos. Reatribua ou exclua os orçamentos primeiro.',
+        'Esta categoria tem orçamentos. Exclua esses orçamentos antes de excluí-la.',
       );
     }
 
