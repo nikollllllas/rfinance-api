@@ -356,4 +356,76 @@ const tokenFrom = (res: request.Response): string => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
   });
+
+  it('orçamento com transação no mês não pode ser excluído até a transação sair', async () => {
+    const adminLogin = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({ email: 'admin@rfinance.local', password: 'Admin@123' })
+      .expect(200);
+
+    const suffix = Date.now();
+    const email = `e2e-budget-${suffix}@rfinance.local`;
+    const password = 'Initial@123';
+    const created = await request(app.getHttpServer())
+      .post('/v1/users')
+      .set('Authorization', `Bearer ${tokenFrom(adminLogin)}`)
+      .send({ name: `E2E Budget ${suffix}`, email, password, role: 'USER' })
+      .expect(201);
+    createdUserIds.add(created.body.id as string);
+
+    const login = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({ email, password })
+      .expect(200);
+    const token = tokenFrom(login);
+
+    const list = await request(app.getHttpServer())
+      .get('/v1/categories')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const food = (list.body as Array<{ id: string; name: string }>).find(
+      (c) => c.name === 'Alimentação',
+    )!;
+
+    const budget = await request(app.getHttpServer())
+      .post('/v1/budgets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ amount: 500, budgetMonth: '2030-06', categoryId: food.id })
+      .expect(201);
+    const budgetId = String(budget.body.id);
+
+    const tx = await request(app.getHttpServer())
+      .post('/v1/transactions')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        description: 'E2E mercado',
+        amount: 10,
+        date: new Date('2030-06-15T12:00:00.000Z').toISOString(),
+        type: TransactionType.GASTO,
+        categoryId: food.id,
+      })
+      .expect(201);
+    const transactionId = String(tx.body.transactions[0].id);
+
+    const progress = await request(app.getHttpServer())
+      .get(`/v1/budgets/${budgetId}/progress`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(progress.body.transactionCount).toBe(1);
+
+    await request(app.getHttpServer())
+      .delete(`/v1/budgets/${budgetId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(409);
+
+    await request(app.getHttpServer())
+      .delete(`/v1/transactions/${transactionId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .delete(`/v1/budgets/${budgetId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+  });
 });

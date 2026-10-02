@@ -83,6 +83,7 @@ export class BudgetsController {
   @Delete(':id')
   @HttpCode(200)
   @ApiOkResponse({ type: MessageResponseDto })
+  @ApiResponse({ status: 409, description: 'Orçamento possui transações no mês' })
   remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.budgetsService.remove(id, user.userId);
   }

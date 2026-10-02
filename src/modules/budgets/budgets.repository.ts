@@ -64,4 +64,13 @@ export class BudgetsRepository {
   ): Promise<DbTransaction[]> {
     throw new Error('Not implemented');
   }
+
+  countTransactionsByCategoryInRange(
+    _userId: string,
+    _categoryId: string,
+    _startDate: Date,
+    _endDate: Date,
+  ): Promise<number> {
+    throw new Error('Not implemented');
+  }
 }
