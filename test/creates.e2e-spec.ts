@@ -296,4 +296,64 @@ const tokenFrom = (res: request.Response): string => {
       ['Alimentação', 'Compras', 'Moradia', 'Outros', 'Salário', 'Saúde', 'Transporte'],
     );
   });
+
+  it('categoria com transação não pode ser excluída até a transação sair', async () => {
+    const adminLogin = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({ email: 'admin@rfinance.local', password: 'Admin@123' })
+      .expect(200);
+
+    const suffix = Date.now();
+    const email = `e2e-delete-${suffix}@rfinance.local`;
+    const password = 'Initial@123';
+    const created = await request(app.getHttpServer())
+      .post('/v1/users')
+      .set('Authorization', `Bearer ${tokenFrom(adminLogin)}`)
+      .send({ name: `E2E Delete ${suffix}`, email, password, role: 'USER' })
+      .expect(201);
+    createdUserIds.add(created.body.id as string);
+
+    const login = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({ email, password })
+      .expect(200);
+    const token = tokenFrom(login);
+
+    const list = await request(app.getHttpServer())
+      .get('/v1/categories')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const food = (list.body as Array<{ id: string; name: string }>).find(
+      (c) => c.name === 'Alimentação',
+    );
+    expect(food).toBeDefined();
+
+    const tx = await request(app.getHttpServer())
+      .post('/v1/transactions')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        description: 'E2E mercado',
+        amount: 10,
+        date: new Date('2030-06-15T12:00:00.000Z').toISOString(),
+        type: TransactionType.GASTO,
+        categoryId: food!.id,
+      })
+      .expect(201);
+    const transactionId = String(tx.body.transactions[0].id);
+
+    await request(app.getHttpServer())
+      .delete(`/v1/categories/${food!.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(409);
+
+    await request(app.getHttpServer())
+      .delete(`/v1/transactions/${transactionId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .delete(`/v1/categories/${food!.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+  });
 });
