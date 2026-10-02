@@ -69,7 +69,7 @@ export class CategoriesService {
       }
     }
 
-    return this.categoriesRepository.update(id, payload);
+    return this.categoriesRepository.update(id, user.userId, payload);
   }
 
   async remove(id: string, user: AuthenticatedUser): Promise<{ message: string }> {
@@ -99,7 +99,7 @@ export class CategoriesService {
       );
     }
 
-    await this.categoriesRepository.delete(id);
+    await this.categoriesRepository.delete(id, user.userId);
     return { message: 'Categoria excluída com sucesso' };
   }
 }

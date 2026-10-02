@@ -88,12 +88,12 @@ export class BudgetsService {
       );
     }
 
-    return this.budgetsRepository.update(id, dto);
+    return this.budgetsRepository.update(id, user.userId, dto);
   }
 
   async remove(id: string, userId: string) {
     await this.getById(id, userId);
-    await this.budgetsRepository.delete(id);
+    await this.budgetsRepository.delete(id, userId);
     return { message: 'Orçamento apagado com sucesso' };
   }
 

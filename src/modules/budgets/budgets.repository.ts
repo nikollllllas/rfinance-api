@@ -36,11 +36,15 @@ export class BudgetsRepository {
     throw new Error('Not implemented');
   }
 
-  update(_id: string, _data: UpdateBudgetInput): Promise<BudgetWithCategory> {
+  update(
+    _id: string,
+    _userId: string,
+    _data: UpdateBudgetInput,
+  ): Promise<BudgetWithCategory> {
     throw new Error('Not implemented');
   }
 
-  delete(_id: string): Promise<DbBudget> {
+  delete(_id: string, _userId: string): Promise<DbBudget> {
     throw new Error('Not implemented');
   }
 

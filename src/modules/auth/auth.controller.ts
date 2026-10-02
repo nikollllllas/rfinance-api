@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
@@ -8,10 +8,12 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import type { Request, Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { SuccessResponseDto } from '../../common/dto/success-response.dto';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
+import { AUTH_COOKIE_NAME, authCookieOptions, tokenFromCookieHeader } from './auth-cookie';
 import { AuthService } from './auth.service';
 import { ForgotPasswordResponseDto, LoginResponseDto, MeResponseDto } from './dto/auth-response.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -30,8 +32,13 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   @ApiOkResponse({ description: 'Login realizado com sucesso', type: LoginResponseDto })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
-  login(@Body() dto: LoginDto): Promise<LoginResponseDto> {
-    return this.authService.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LoginResponseDto> {
+    const { accessToken, user } = await this.authService.login(dto);
+    res.cookie(AUTH_COOKIE_NAME, accessToken, authCookieOptions());
+    return { user };
   }
 
   @Public()
@@ -58,11 +65,17 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
+  @Public()
   @Post('logout')
   @HttpCode(200)
-  @ApiBearerAuth()
   @ApiOkResponse({ type: SuccessResponseDto })
-  logout(): SuccessResponseDto {
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<SuccessResponseDto> {
+    await this.authService.logout(tokenFromCookieHeader(req.headers.cookie));
+    const { maxAge: _maxAge, ...clearOptions } = authCookieOptions();
+    res.clearCookie(AUTH_COOKIE_NAME, clearOptions);
     return { success: true };
   }
 

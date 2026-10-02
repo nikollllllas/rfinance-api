@@ -48,11 +48,15 @@ export class TransactionsRepository {
     throw new Error('Not implemented');
   }
 
-  update(_id: string, _data: UpdateTransactionInput): Promise<TransactionWithCategory> {
+  update(
+    _id: string,
+    _userId: string,
+    _data: UpdateTransactionInput,
+  ): Promise<TransactionWithCategory> {
     throw new Error('Not implemented');
   }
 
-  delete(_id: string): Promise<DbTransaction> {
+  delete(_id: string, _userId: string): Promise<DbTransaction> {
     throw new Error('Not implemented');
   }
 

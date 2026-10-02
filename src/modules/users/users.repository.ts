@@ -14,6 +14,8 @@ export type UpdateUserInput = Partial<{
   email: string;
   passwordHash: string;
   role: Role;
+  privacyAcceptedAt: Date | null;
+  privacyPolicyVersion: string | null;
 }>;
 
 export type CreatePasswordRecoveryTokenInput = {
@@ -85,6 +87,14 @@ export class UsersRepository {
   }
 
   markAllPasswordRecoveryTokensAsUsed(_userId: string): Promise<void> {
+    throw new Error('Not implemented');
+  }
+
+  incrementTokenVersion(_id: string): Promise<void> {
+    throw new Error('Not implemented');
+  }
+
+  delete(_id: string): Promise<void> {
     throw new Error('Not implemented');
   }
 }

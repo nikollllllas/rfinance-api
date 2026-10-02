@@ -66,4 +66,28 @@ describe('BudgetsService', () => {
     );
     expect(repository.findByIdAndUserId).toHaveBeenCalledWith('budget-1', 'user-1');
   });
+
+  it('deve repassar o userId para o repository.update', async () => {
+    const existing = { id: 'budget-1', categoryId: 'cat-1', budgetMonth: '2026-03' };
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue(existing);
+    (repository.findByUnique as jest.Mock).mockResolvedValue(null);
+    (repository.update as jest.Mock).mockResolvedValue(existing);
+
+    await service.update('budget-1', authUser, { amount: 200 });
+
+    expect(repository.update).toHaveBeenCalledWith(
+      'budget-1',
+      'user-1',
+      expect.any(Object),
+    );
+  });
+
+  it('deve repassar o userId para o repository.delete', async () => {
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({ id: 'budget-1' });
+    (repository.delete as jest.Mock).mockResolvedValue({ id: 'budget-1' });
+
+    await service.remove('budget-1', 'user-1');
+
+    expect(repository.delete).toHaveBeenCalledWith('budget-1', 'user-1');
+  });
 });
