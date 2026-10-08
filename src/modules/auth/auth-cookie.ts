@@ -24,3 +24,8 @@ export function tokenFromCookieHeader(header?: string): string | null {
     return null;
   }
 }
+
+// Clientes mobile não têm cookie jar httpOnly; precisam do accessToken no body pra guardar e mandar como Bearer.
+export function isMobileClient(clientPlatformHeader?: string): boolean {
+  return clientPlatformHeader?.toLowerCase() === 'mobile';
+}
