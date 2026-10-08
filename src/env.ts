@@ -31,6 +31,11 @@ const envSchema = z.object({
     ),
   RESEND_API_KEY: z.string().optional(),
   MAIL_FROM: z.string().default('RFinance <onboarding@resend.dev>'),
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_NAME: z.string().default('rfinance-attachments'),
+  ATTACHMENT_MAX_SIZE_MB: z.coerce.number().int().positive().default(10),
   FRONTEND_URL: z
     .string()
     .url()

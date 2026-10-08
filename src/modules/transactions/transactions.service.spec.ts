@@ -2,12 +2,14 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Role } from '../../common/enums/role.enum';
 import { TransactionType } from '../../infrastructure/drizzle/schema';
+import { AttachmentsService } from '../attachments/attachments.service';
 import { TransactionsRepository } from './transactions.repository';
 import { TransactionsService } from './transactions.service';
 
 describe('TransactionsService', () => {
   let service: TransactionsService;
   let repository: TransactionsRepository;
+  let attachmentsService: AttachmentsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -29,11 +31,18 @@ describe('TransactionsService', () => {
             findManyByIdsAndUserId: jest.fn(),
           },
         },
+        {
+          provide: AttachmentsService,
+          useValue: {
+            removeAllForTransaction: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<TransactionsService>(TransactionsService);
     repository = module.get<TransactionsRepository>(TransactionsRepository);
+    attachmentsService = module.get<AttachmentsService>(AttachmentsService);
   });
 
   it('deve aplicar scoping por userId na listagem', async () => {
@@ -129,5 +138,14 @@ describe('TransactionsService', () => {
     await service.remove('tx-id', 'user-id');
 
     expect(repository.delete).toHaveBeenCalledWith('tx-id', 'user-id');
+  });
+
+  it('deve limpar os anexos antes de apagar a transação', async () => {
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue({ id: 'tx-id' });
+    (repository.delete as jest.Mock).mockResolvedValue({ id: 'tx-id' });
+
+    await service.remove('tx-id', 'user-id');
+
+    expect(attachmentsService.removeAllForTransaction).toHaveBeenCalledWith('tx-id');
   });
 });

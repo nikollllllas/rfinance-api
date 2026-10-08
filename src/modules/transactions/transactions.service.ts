@@ -6,6 +6,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import { addMonths } from 'date-fns';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
+import { AttachmentsService } from '../attachments/attachments.service';
 import {
   PaymentMethod,
   TransactionType,
@@ -30,7 +31,10 @@ const splitInstallmentAmounts = (amount: number, count: number): number[] => {
 
 @Injectable()
 export class TransactionsService {
-  constructor(private readonly transactionsRepository: TransactionsRepository) {}
+  constructor(
+    private readonly transactionsRepository: TransactionsRepository,
+    private readonly attachmentsService: AttachmentsService,
+  ) {}
 
   async create(user: AuthenticatedUser, dto: CreateTransactionDto, idempotencyKey?: string) {
     if (idempotencyKey) {
@@ -172,6 +176,7 @@ export class TransactionsService {
 
   async remove(id: string, userId: string): Promise<{ message: string }> {
     await this.getById(id, userId);
+    await this.attachmentsService.removeAllForTransaction(id);
     await this.transactionsRepository.delete(id, userId);
     return { message: 'Transação apagada com sucesso' };
   }

@@ -18,6 +18,14 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
       - key: FRONTEND_URL
         value: https://rfinance.vercel.app
       - key: CORS_ALLOWED_ORIGINS

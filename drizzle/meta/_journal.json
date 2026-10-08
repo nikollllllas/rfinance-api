@@ -50,6 +50,13 @@
       "when": 1790795361277,
       "tag": "0006_jazzy_bruce_banner",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791469796650,
+      "tag": "0007_colorful_red_shift",
+      "breakpoints": true
     }
   ]
 }

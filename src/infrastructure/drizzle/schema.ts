@@ -168,6 +168,32 @@ export const budgets = pgTable(
   }),
 );
 
+export const attachments = pgTable(
+  'attachments',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
+    transactionId: text('transactionId')
+      .notNull()
+      .references(() => transactions.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    userId: uuid('userId')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    storageKey: text('storageKey').notNull().unique(),
+    fileName: text('fileName').notNull(),
+    mimeType: text('mimeType').notNull(),
+    sizeBytes: integer('sizeBytes').notNull(),
+    createdAt: timestamp('createdAt', { withTimezone: false })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    transactionIdx: index('attachments_transactionId_idx').on(t.transactionId),
+    userIdx: index('attachments_userId_idx').on(t.userId),
+  }),
+);
+
 export const idempotencyKeys = pgTable(
   'idempotency_keys',
   {
@@ -211,6 +237,7 @@ export type DbCategory = typeof categories.$inferSelect;
 export type DbTransaction = typeof transactions.$inferSelect;
 export type DbBudget = typeof budgets.$inferSelect;
 export type DbIdempotencyKey = typeof idempotencyKeys.$inferSelect;
+export type DbAttachment = typeof attachments.$inferSelect;
 export type DbPasswordRecoveryToken = typeof passwordRecoveryTokens.$inferSelect;
 
 export const CategoryType = {
