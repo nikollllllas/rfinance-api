@@ -1,9 +1,10 @@
-import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Post, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiHeader,
   ApiOkResponse,
   ApiResponse,
   ApiTags,
@@ -14,7 +15,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { SuccessResponseDto } from '../../common/dto/success-response.dto';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
-import { AUTH_COOKIE_NAME, authCookieOptions, tokenFromCookieHeader } from './auth-cookie';
+import { AUTH_COOKIE_NAME, authCookieOptions, isMobileClient, tokenFromCookieHeader } from './auth-cookie';
 import { AuthService } from './auth.service';
 import { ForgotPasswordResponseDto, LoginResponseDto, MeResponseDto } from './dto/auth-response.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -32,15 +33,21 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   @ApiBody({ type: LoginDto })
+  @ApiHeader({
+    name: 'x-client-platform',
+    required: false,
+    description: 'Enviar "mobile" pra receber accessToken também no body (sem isso, só o cookie httpOnly é setado)',
+  })
   @ApiOkResponse({ description: 'Login realizado com sucesso', type: LoginResponseDto })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
+    @Headers('x-client-platform') clientPlatform?: string,
   ): Promise<LoginResponseDto> {
     const { accessToken, user } = await this.authService.login(dto);
     res.cookie(AUTH_COOKIE_NAME, accessToken, authCookieOptions());
-    return { user };
+    return isMobileClient(clientPlatform) ? { accessToken, user } : { user };
   }
 
   @Public()
@@ -48,15 +55,21 @@ export class AuthController {
   @Post('register')
   @HttpCode(201)
   @ApiBody({ type: RegisterDto })
+  @ApiHeader({
+    name: 'x-client-platform',
+    required: false,
+    description: 'Enviar "mobile" pra receber accessToken também no body (sem isso, só o cookie httpOnly é setado)',
+  })
   @ApiCreatedResponse({ description: 'Conta criada e sessão iniciada', type: LoginResponseDto })
   @ApiResponse({ status: 409, description: 'E-mail já está em uso' })
   async register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
+    @Headers('x-client-platform') clientPlatform?: string,
   ): Promise<LoginResponseDto> {
     const { accessToken, user } = await this.authService.register(dto);
     res.cookie(AUTH_COOKIE_NAME, accessToken, authCookieOptions());
-    return { user };
+    return isMobileClient(clientPlatform) ? { accessToken, user } : { user };
   }
 
   @Public()

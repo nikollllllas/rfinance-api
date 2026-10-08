@@ -16,6 +16,12 @@ export class UserSummaryDto {
 }
 
 export class LoginResponseDto {
+  @ApiPropertyOptional({
+    description: 'Só presente quando o header x-client-platform: mobile é enviado — clientes mobile não têm cookie jar, então o token também vai no body',
+    example: 'jwt.token.value',
+  })
+  accessToken?: string;
+
   @ApiProperty({ type: () => UserSummaryDto })
   user!: UserSummaryDto;
 }
