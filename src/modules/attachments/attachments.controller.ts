@@ -4,7 +4,9 @@ import {
   Get,
   HttpCode,
   Param,
+  Header,
   Post,
+  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -84,6 +86,19 @@ export class AttachmentsController {
   @ApiResponse({ status: 404, description: 'Anexo não encontrado' })
   getDownloadUrl(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.attachmentsService.getDownloadUrl(id, user.userId);
+  }
+
+  @Get(':id/content')
+  @Header('Cache-Control', 'private, max-age=3600')
+  @ApiOkResponse({ description: 'Conteúdo binário do anexo (inline)' })
+  @ApiResponse({ status: 404, description: 'Anexo não encontrado' })
+  async getContent(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    const { stream, attachment } = await this.attachmentsService.getContent(id, user.userId);
+    return new StreamableFile(stream, {
+      type: attachment.mimeType,
+      length: attachment.sizeBytes,
+      disposition: `inline; filename="${encodeURIComponent(attachment.fileName)}"`,
+    });
   }
 
   @Delete(':id')

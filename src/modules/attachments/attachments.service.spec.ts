@@ -1,8 +1,11 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import convertHeic from 'heic-convert';
 import { StorageService } from '../storage/storage.service';
 import { AttachmentsRepository } from './attachments.repository';
 import { AttachmentsService } from './attachments.service';
+
+jest.mock('heic-convert', () => jest.fn());
 
 describe('AttachmentsService', () => {
   let service: AttachmentsService;
@@ -29,6 +32,7 @@ describe('AttachmentsService', () => {
           useValue: {
             upload: jest.fn(),
             getSignedDownloadUrl: jest.fn(),
+            getObjectStream: jest.fn(),
             delete: jest.fn(),
           },
         },
@@ -94,6 +98,52 @@ describe('AttachmentsService', () => {
         sizeBytes: 1024,
       }),
     );
+  });
+
+  it('deve converter HEIC para JPEG antes de salvar', async () => {
+    (repository.transactionBelongsToUser as jest.Mock).mockResolvedValue(true);
+    (repository.create as jest.Mock).mockResolvedValue({ id: 'attachment-id' });
+    const jpeg = Buffer.from('fake-jpeg-convertido');
+    (convertHeic as unknown as jest.Mock).mockResolvedValue(jpeg);
+
+    await service.upload('tx-id', 'user-id', {
+      originalname: 'IMG_0001.HEIC',
+      mimetype: 'image/heic',
+      size: 4096,
+      buffer: Buffer.from('fake-heic'),
+    });
+
+    expect(storage.upload).toHaveBeenCalledWith(
+      expect.stringMatching(/IMG_0001\.jpg$/),
+      jpeg,
+      'image/jpeg',
+    );
+    expect(repository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fileName: 'IMG_0001.jpg',
+        mimeType: 'image/jpeg',
+        sizeBytes: jpeg.length,
+      }),
+    );
+  });
+
+  it('deve rejeitar HEIC que falha na conversão', async () => {
+    (repository.transactionBelongsToUser as jest.Mock).mockResolvedValue(true);
+    (convertHeic as unknown as jest.Mock).mockRejectedValue(new Error('corrompido'));
+
+    await expect(
+      service.upload('tx-id', 'user-id', { ...file, mimetype: 'image/heic' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(storage.upload).not.toHaveBeenCalled();
+  });
+
+  it('deve recusar conteúdo de anexo de outro usuário', async () => {
+    (repository.findByIdAndUserId as jest.Mock).mockResolvedValue(null);
+
+    await expect(service.getContent('att-id', 'user-id')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(storage.getObjectStream).not.toHaveBeenCalled();
   });
 
   it('deve recusar baixar anexo de outro usuário', async () => {

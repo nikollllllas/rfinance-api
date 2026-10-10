@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import convertHeic from 'heic-convert';
 import { env } from '../../env';
 import { DbAttachment } from '../../infrastructure/drizzle/schema';
 import { StorageService } from '../storage/storage.service';
@@ -15,7 +16,11 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/png',
   'image/webp',
   'image/heic',
+  'image/heif',
 ]);
+
+// HEIC não renderiza fora do Safari: converte pra JPEG no upload pra abrir em qualquer navegador.
+const HEIC_MIME_TYPES = new Set(['image/heic', 'image/heif']);
 
 @Injectable()
 export class AttachmentsService {
@@ -50,19 +55,53 @@ export class AttachmentsService {
       );
     }
 
-    const sanitizedFileName = file.originalname.replace(/[^\w.\-]+/g, '_').slice(-120);
+    const converted = HEIC_MIME_TYPES.has(file.mimetype)
+      ? await this.convertHeicToJpeg(file.buffer, file.originalname)
+      : null;
+    const buffer = converted?.buffer ?? file.buffer;
+    const mimeType = converted?.mimeType ?? file.mimetype;
+    const fileName = converted?.fileName ?? file.originalname;
+
+    const sanitizedFileName = fileName.replace(/[^\w.\-]+/g, '_').slice(-120);
     const storageKey = `attachments/${userId}/${transactionId}/${randomUUID()}-${sanitizedFileName}`;
 
-    await this.storageService.upload(storageKey, file.buffer, file.mimetype);
+    await this.storageService.upload(storageKey, buffer, mimeType);
 
     return this.attachmentsRepository.create({
       transactionId,
       userId,
       storageKey,
       fileName: sanitizedFileName,
-      mimeType: file.mimetype,
-      sizeBytes: file.size,
+      mimeType,
+      sizeBytes: converted ? buffer.length : file.size,
     });
+  }
+
+  private async convertHeicToJpeg(
+    input: Buffer,
+    originalName: string,
+  ): Promise<{ buffer: Buffer; mimeType: string; fileName: string }> {
+    try {
+      const output = await convertHeic({ buffer: input, format: 'JPEG', quality: 0.85 });
+      return {
+        buffer: Buffer.from(output),
+        mimeType: 'image/jpeg',
+        fileName: `${originalName.replace(/\.hei[cf]$/i, '')}.jpg`,
+      };
+    } catch {
+      throw new BadRequestException('Não foi possível processar a imagem HEIC enviada');
+    }
+  }
+
+  // Conteúdo passa pelo backend (same-origin via proxy do front) porque o CSP do web
+  // só permite img/connect de 'self' — URL assinada do R2 seria bloqueada no <img>/pdf.js.
+  async getContent(id: string, userId: string) {
+    const attachment = await this.attachmentsRepository.findByIdAndUserId(id, userId);
+    if (!attachment) {
+      throw new NotFoundException('Anexo não encontrado');
+    }
+    const stream = await this.storageService.getObjectStream(attachment.storageKey);
+    return { stream, attachment };
   }
 
   async list(transactionId: string, userId: string): Promise<DbAttachment[]> {

@@ -1,3 +1,4 @@
+import type { Readable } from 'node:stream';
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import {
   DeleteObjectCommand,
@@ -61,6 +62,14 @@ export class StorageService {
       ResponseContentDisposition: `inline; filename="${encodeURIComponent(fileName)}"`,
     });
     return getSignedUrl(client, command, { expiresIn: DOWNLOAD_URL_TTL_SECONDS });
+  }
+
+  async getObjectStream(key: string): Promise<Readable> {
+    const client = this.ensureClient();
+    const response = await client.send(
+      new GetObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }),
+    );
+    return response.Body as Readable;
   }
 
   async delete(key: string): Promise<void> {
