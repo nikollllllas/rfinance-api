@@ -13,6 +13,7 @@ import { BudgetsModule } from './modules/budgets/budgets.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { RbacModule } from './modules/rbac/rbac.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -32,6 +33,7 @@ import { UsersModule } from './modules/users/users.module';
     TransactionsModule,
     BudgetsModule,
     DashboardModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [
