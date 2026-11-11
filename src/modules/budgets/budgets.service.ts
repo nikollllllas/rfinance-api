@@ -111,18 +111,14 @@ export class BudgetsService {
 
   async replicate(userId: string, dto: ReplicateBudgetsDto) {
     this.ensureValidMonth(dto.targetMonth);
-    const [year, month] = dto.targetMonth.split('-').map(Number);
-    const previousDate = new Date(year, month - 2);
-    const previousMonth = `${previousDate.getFullYear()}-${String(
-      previousDate.getMonth() + 1,
-    ).padStart(2, '0')}`;
-
     const previousBudgets = await this.budgetsRepository.findPreviousMonthBudgets(
       userId,
-      previousMonth,
+      dto.targetMonth,
     );
     if (previousBudgets.length === 0) {
-      throw new NotFoundException(`Nenhum orçamento encontrado para ${previousMonth}`);
+      throw new NotFoundException(
+        `Nenhum orçamento encontrado antes de ${dto.targetMonth}`,
+      );
     }
 
     const currentBudgets = await this.budgetsRepository.findManyByUserId(

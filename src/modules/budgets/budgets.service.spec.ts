@@ -116,4 +116,19 @@ describe('BudgetsService', () => {
     );
     expect(repository.delete).not.toHaveBeenCalled();
   });
+
+  it('deve replicar do último mês com orçamentos, mesmo pulando meses', async () => {
+    (repository.findPreviousMonthBudgets as jest.Mock).mockResolvedValue([
+      { amount: '500', categoryId: 'cat-1', budgetMonth: '2026-09' },
+    ]);
+    (repository.findManyByUserId as jest.Mock).mockResolvedValue([]);
+    (repository.createManyForMonth as jest.Mock).mockImplementation(async (list) => list);
+
+    await service.replicate('user-1', { action: 'replicate', targetMonth: '2026-11' });
+
+    expect(repository.findPreviousMonthBudgets).toHaveBeenCalledWith('user-1', '2026-11');
+    expect(repository.createManyForMonth).toHaveBeenCalledWith([
+      { amount: '500', budgetMonth: '2026-11', categoryId: 'cat-1', userId: 'user-1' },
+    ]);
+  });
 });

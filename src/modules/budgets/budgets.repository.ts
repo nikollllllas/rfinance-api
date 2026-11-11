@@ -48,7 +48,7 @@ export class BudgetsRepository {
     throw new Error('Not implemented');
   }
 
-  findPreviousMonthBudgets(_userId: string, _budgetMonth: string): Promise<BudgetWithCategory[]> {
+  findPreviousMonthBudgets(_userId: string, _beforeMonth: string): Promise<BudgetWithCategory[]> {
     throw new Error('Not implemented');
   }
 
