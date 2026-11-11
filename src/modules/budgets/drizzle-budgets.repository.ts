@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lt, lte, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../infrastructure/drizzle/drizzle.service';
 import { budgets, categories, DbBudget, DbCategory, transactions } from '../../infrastructure/drizzle/schema';
 import { BudgetsRepository } from './budgets.repository';
@@ -125,11 +125,18 @@ export class DrizzleBudgetsRepository extends BudgetsRepository {
     return rows[0] as unknown as DbBudget;
   }
 
-  findPreviousMonthBudgets(
+  async findPreviousMonthBudgets(
     userId: string,
-    budgetMonth: string,
+    beforeMonth: string,
   ): Promise<(DbBudget & { category: DbCategory })[]> {
-    return this.findManyByUserId(userId, budgetMonth);
+    const rows = await this.drizzle.db
+      .select({ budgetMonth: budgets.budgetMonth })
+      .from(budgets)
+      .where(and(eq(budgets.userId, userId), lt(budgets.budgetMonth, beforeMonth)))
+      .orderBy(desc(budgets.budgetMonth))
+      .limit(1);
+    if (!rows[0]) return [];
+    return this.findManyByUserId(userId, rows[0].budgetMonth);
   }
 
   createManyForMonth(
